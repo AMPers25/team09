@@ -3,7 +3,7 @@
  * File: src/sql_wrapper.php
  * Author: Yeonsu Kim (Backend Developer)
  * Date: 2025-10-09
- * role: Prepared Statement 기반의 안전한 쿼리 실행 래퍼 함수를 제공합니다.
+ * Role: Prepared Statement 기반의 안전한 쿼리 실행 래퍼 함수를 제공합니다.
  */
 
 // DB 연결 함수가 정의된 파일을 로드합니다.
