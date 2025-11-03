@@ -42,17 +42,19 @@ CREATE TABLE WeatherStatusDim (
 
 -- 1-4. Bookmark (즐겨찾기) 테이블
 CREATE TABLE Bookmark (
+    bookmark_id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'PK. 즐겨찾기 ID',
+    
     region_code CHAR(5) NOT NULL COMMENT 'Region 테이블의 FK. 즐겨찾기 지역 코드',
     start_date DATE NOT NULL COMMENT 'DateDim 테이블의 FK. 즐겨찾기 시작 날짜',
     end_date DATE NOT NULL COMMENT 'DateDim 테이블의 FK. 즐겨찾기 종료 날짜',
     
-    -- 복합 기본 키 (PK)
-    PRIMARY KEY (region_code, start_date, end_date),
-    
     -- 외래 키 (FK) 정의
     FOREIGN KEY (region_code) REFERENCES Region(region_code) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (start_date) REFERENCES DateDim(date_id) ON DELETE RESTRICT ON UPDATE CASCADE,
-    FOREIGN KEY (end_date) REFERENCES DateDim(date_id) ON DELETE RESTRICT ON UPDATE CASCADE
+    FOREIGN KEY (end_date) REFERENCES DateDim(date_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+
+    -- 동일 기간/지역의 중복 즐겨찾기 방지
+    UNIQUE KEY uk_bookmark (region_code, start_date, end_date)
 ) ENGINE=InnoDB COMMENT='여행지 즐겨찾기 목록';
 
 -- ***********************************************
