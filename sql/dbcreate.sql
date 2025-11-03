@@ -1,7 +1,7 @@
 -- ======================================================================================
 -- File: dbcreate.sql
 -- Author: Yeonsu Kim (Backend Developer)
--- Update: 2025-10-30
+-- Update: 2025-11-04
 -- 설명: 
 -- 프로젝트 요구사항 2-(2)에 따른 dbcreate.sql 스크립트
 -- 데이터베이스 사용자 ID, 비밀번호, DB 이름은 프로젝트 요구사항 3-(1)에 따라 'team09'로 설정
@@ -39,6 +39,21 @@ CREATE TABLE WeatherStatusDim (
     status_code CHAR(3) PRIMARY KEY COMMENT '기상 현상 코드 (PK, 예: 091, 084)',
     status_name VARCHAR(50) NOT NULL COMMENT '기상 현상 (예: 맑음, 비, 흐림)'
 ) ENGINE=InnoDB;
+
+-- 1-4. Bookmark (즐겨찾기) 테이블
+CREATE TABLE Bookmark (
+    region_code CHAR(5) NOT NULL COMMENT 'Region 테이블의 FK. 즐겨찾기 지역 코드',
+    start_date DATE NOT NULL COMMENT 'DateDim 테이블의 FK. 즐겨찾기 시작 날짜',
+    end_date DATE NOT NULL COMMENT 'DateDim 테이블의 FK. 즐겨찾기 종료 날짜',
+    
+    -- 복합 기본 키 (PK)
+    PRIMARY KEY (region_code, start_date, end_date),
+    
+    -- 외래 키 (FK) 정의
+    FOREIGN KEY (region_code) REFERENCES Region(region_code) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (start_date) REFERENCES DateDim(date_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (end_date) REFERENCES DateDim(date_id) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB COMMENT='여행지 즐겨찾기 목록';
 
 -- ***********************************************
 -- 2. 사실 테이블 (Fact Tables)
