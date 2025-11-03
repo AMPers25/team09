@@ -19,6 +19,7 @@ USE team09;
 CREATE TABLE Region (
     region_code CHAR(5) PRIMARY KEY COMMENT '지역 코드 (PK, 예: 01~75)',
     region_name VARCHAR(50) NOT NULL COMMENT '지역명 (예: 서울, 제주)',
+    province VARCHAR(20) COMMENT '광역자치단체명 (광역시 등은 NULL)',
     popular_count INT DEFAULT 0 COMMENT '지역별 검색 횟수 (랭킹 분석용)'
 ) ENGINE=InnoDB;
 
