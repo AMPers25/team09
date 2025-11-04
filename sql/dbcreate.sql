@@ -79,10 +79,10 @@ CREATE TABLE AirQuality (
 CREATE TABLE Temperature (
     region_code CHAR(5) NOT NULL,
     date_id DATE NOT NULL,
-    avg_temp DECIMAL(3, 1) COMMENT '평균기온',
-    max_temp DECIMAL(3, 1) COMMENT '최고기온',
-    min_temp DECIMAL(3, 1) COMMENT '최저기온',
-    daily_temp_range DECIMAL(3, 1) COMMENT '일교차',
+    avg_temp DECIMAL(4, 1) COMMENT '평균기온',
+    max_temp DECIMAL(4, 1) COMMENT '최고기온',
+    min_temp DECIMAL(4, 1) COMMENT '최저기온',
+    daily_temp_range DECIMAL(4, 1) COMMENT '일교차',
     
     PRIMARY KEY (region_code, date_id),
     
@@ -95,10 +95,10 @@ CREATE TABLE Rain (
     region_code CHAR(5) NOT NULL,
     date_id DATE NOT NULL,
     status_code CHAR(3) NOT NULL COMMENT '기상 현상 코드 (FK)',
-    daily_rainfall DECIMAL(5, 2) COMMENT '일 강수량 (mm)',
-    humidity INT COMMENT '평균 습도 (%)',
-    wind_speed DECIMAL(4, 2) COMMENT '평균 풍속 (m/s)',
-    cloud_cover INT COMMENT '평균 운량 (옥타)',
+    daily_rainfall DECIMAL(6, 2) COMMENT '일 강수량 (mm)',
+    humidity DECIMAL(4,1) COMMENT '평균 습도 (%)',
+    wind_speed DECIMAL(4, 1) COMMENT '평균 풍속 (m/s)',
+    cloud_cover DECIMAL(3,1) COMMENT '평균 전운량 (1/10)',
     
     PRIMARY KEY (region_code, date_id),
     
