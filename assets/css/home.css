@@ -1,0 +1,117 @@
+
+/* ========== Home Hero (높이 520px) ========== */
+.header--home {
+  height: 520px;
+  display: flex;               /* header-base 에서 상속받는 flex를 명시 */
+  flex-direction: column; /* 세로로 쌓이게 */
+  justify-content: center;
+  text-align: left;
+}
+
+.header--home h1 {
+  font-size: 64px;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.sub {
+  font-size: 32px;
+  color: var(--text);
+  margin-top: 8px;
+}
+
+/* ========== 홈 입력 패널 & 그리드 ========== */
+.input-panel{
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius:60px;
+  padding:16px;
+}
+
+.row{     /* 여러 입력 필드를 한 줄로 나열 */
+  display:flex;
+  gap:25px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.field{     /* 각 입력박스(label + input) */
+  min-width:220px;
+  flex:1;
+}
+
+.field select,
+.field input{
+  height:61px;
+  padding:8px 10px;
+  border-radius:5px;
+  border:1px solid var(--line);
+  background: var(--default);
+  color: var(--text);
+  font-size: 20px;
+}
+
+/* placeholder (힌트 텍스트) 스타일 */
+.field input::placeholder {
+  color: var(--text2);  /* 연한 글씨 */
+}
+
+/* Cards */
+.cards{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+  margin:22px 0;
+}
+
+.card{
+  background:var(--bg);
+  border-radius:10px;
+  padding:16px;
+}
+
+.card h3{ margin:6px 0 12px; }   /* 카드 안의 제목 위아래 간격 조정 */
+
+/* 인기 조회 지역 */
+.card--sb{
+    background:var(--sb);
+}
+
+
+
+/* Buttons */
+.btn{
+  background:var(--main);
+  border:0;
+  border-radius:60px;
+  padding:10px 16px;
+  cursor:pointer;
+  color:var(--default);
+}
+
+/* 아이콘 span에 붙이면 간격 안정적 */
+.btn .icon{ font-size:16px; line-height:1; }
+
+.btn .u_underline{ text-decoration: underline; text-underline-offset: 2px;}
+
+.btn[disabled]{ opacity:.45; cursor:not-allowed; }
+
+/* 2:1 레이아웃 유틸 (인기 조회 지역 + 즐겨찾기 보러가기) */
+.flex{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:16px;
+}
+
+.rank{ margin:0; padding:0 0 0 24px; }    /* 리스트 들여쓰기(“인기 조회 지역” 목록에 적용) */
+.big{ display:block; text-align:center; padding:18px; font-weight:600; }   /* 카드 안에서 중앙 큰 텍스트가 필요할 때  */
+
+
+
+
+/* 반응형 */
+@media (max-width: 960px){
+  .cards, .flex{ grid-template-columns:1fr; }
+  .header--home{ height: 420px; }
+  .header--home h1{ font-size: 36px; }
+}
