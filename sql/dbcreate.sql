@@ -1,7 +1,7 @@
 -- ======================================================================================
 -- File: dbcreate.sql
 -- Author: Yeonsu Kim (Backend Developer)
--- Update: 2025-10-30
+-- Update: 2025-11-04
 -- 설명: 
 -- 프로젝트 요구사항 2-(2)에 따른 dbcreate.sql 스크립트
 -- 데이터베이스 사용자 ID, 비밀번호, DB 이름은 프로젝트 요구사항 3-(1)에 따라 'team09'로 설정
@@ -19,6 +19,7 @@ USE team09;
 CREATE TABLE Region (
     region_code CHAR(5) PRIMARY KEY COMMENT '지역 코드 (PK, 예: 01~75)',
     region_name VARCHAR(50) NOT NULL COMMENT '지역명 (예: 서울, 제주)',
+    province VARCHAR(20) COMMENT '광역자치단체명 (광역시 등은 NULL)',
     popular_count INT DEFAULT 0 COMMENT '지역별 검색 횟수 (랭킹 분석용)'
 ) ENGINE=InnoDB;
 
@@ -38,6 +39,23 @@ CREATE TABLE WeatherStatusDim (
     status_code CHAR(3) PRIMARY KEY COMMENT '기상 현상 코드 (PK, 예: 091, 084)',
     status_name VARCHAR(50) NOT NULL COMMENT '기상 현상 (예: 맑음, 비, 흐림)'
 ) ENGINE=InnoDB;
+
+-- 1-4. Bookmark (즐겨찾기) 테이블
+CREATE TABLE Bookmark (
+    bookmark_id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'PK. 즐겨찾기 ID',
+    
+    region_code CHAR(5) NOT NULL COMMENT 'Region 테이블의 FK. 즐겨찾기 지역 코드',
+    start_date DATE NOT NULL COMMENT 'DateDim 테이블의 FK. 즐겨찾기 시작 날짜',
+    end_date DATE NOT NULL COMMENT 'DateDim 테이블의 FK. 즐겨찾기 종료 날짜',
+    
+    -- 외래 키 (FK) 정의
+    FOREIGN KEY (region_code) REFERENCES Region(region_code) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (start_date) REFERENCES DateDim(date_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (end_date) REFERENCES DateDim(date_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+
+    -- 동일 기간/지역의 중복 즐겨찾기 방지
+    UNIQUE KEY uk_bookmark (region_code, start_date, end_date)
+) ENGINE=InnoDB COMMENT='여행지 즐겨찾기 목록';
 
 -- ***********************************************
 -- 2. 사실 테이블 (Fact Tables)
@@ -61,10 +79,10 @@ CREATE TABLE AirQuality (
 CREATE TABLE Temperature (
     region_code CHAR(5) NOT NULL,
     date_id DATE NOT NULL,
-    avg_temp DECIMAL(3, 1) COMMENT '평균기온',
-    max_temp DECIMAL(3, 1) COMMENT '최고기온',
-    min_temp DECIMAL(3, 1) COMMENT '최저기온',
-    daily_temp_range DECIMAL(3, 1) COMMENT '일교차',
+    avg_temp DECIMAL(4, 1) COMMENT '평균기온',
+    max_temp DECIMAL(4, 1) COMMENT '최고기온',
+    min_temp DECIMAL(4, 1) COMMENT '최저기온',
+    daily_temp_range DECIMAL(4, 1) COMMENT '일교차',
     
     PRIMARY KEY (region_code, date_id),
     
@@ -77,10 +95,10 @@ CREATE TABLE Rain (
     region_code CHAR(5) NOT NULL,
     date_id DATE NOT NULL,
     status_code CHAR(3) NOT NULL COMMENT '기상 현상 코드 (FK)',
-    daily_rainfall DECIMAL(5, 2) COMMENT '일 강수량 (mm)',
-    humidity INT COMMENT '평균 습도 (%)',
-    wind_speed DECIMAL(4, 2) COMMENT '평균 풍속 (m/s)',
-    cloud_cover INT COMMENT '평균 운량 (옥타)',
+    daily_rainfall DECIMAL(6, 2) COMMENT '일 강수량 (mm)',
+    humidity DECIMAL(4,1) COMMENT '평균 습도 (%)',
+    wind_speed DECIMAL(4, 1) COMMENT '평균 풍속 (m/s)',
+    cloud_cover DECIMAL(3,1) COMMENT '평균 전운량 (1/10)',
     
     PRIMARY KEY (region_code, date_id),
     
