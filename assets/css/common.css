@@ -1,0 +1,47 @@
+*{box-sizing:border-box} 
+:root{
+    --bg:#efefef;  /* background */
+    --line:#dfdfdf;
+    --text:#343434;
+    --text2:#666666;
+    --text3:#b0b0b0;
+    --default:#ffffff;
+    --main:#b3d2e4;
+    --sb:#e5f3ff;    /* skyblue */
+    --pk:#ffdfdf;   /* pink */
+    --yw:#fff2cd;}   /* yellow */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--default);
+  color: var(--text);
+  font-family: system-ui, Apple SD Gothic Neo, Segoe UI, sans-serif;
+}
+.container {
+  max-width: 1040px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+/* Buttons / inputs base */
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* 공통 상단 탭 스타일 */
+.header-base {
+  width: 100%;
+  background: linear-gradient(90deg, var(--sb), var(--main));
+  display: flex;
+  /* align-items: center; */
+  justify-content: space-between;
+  padding: 0 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* 작은 화면에서 좌우 간격 보호 */
+@media (max-width: 960px){
+  .header-base > .container { padding: 12px 16px; }
+  .header--page { height: 72px; }
+}

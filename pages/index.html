@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang = "ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Travel Weather Advisor</title>
+
+    <link rel="stylesheet" href="css/common.css" />
+    <link rel="stylesheet" href="css/home.css" />
+</head>
+<body>
+
+<!-- 히어로 영역 (그라데이션 + 큰 타이틀) -->
+<header class = "header-base header--home">
+    <div class="container">
+        <h1>Past Weather,<br/>Present Insight</h1>
+        <p class = "sub">Find the best time to travel, based on real history.</p>
+        <p class = "sub">당신의 휴가 일정에 딱 맞는 여행 날짜와 여행지를 찾아드릴게요.<br/>
+            먼저 휴가 기간을 입력해주세요.</p>
+    </div>
+</header>
+
+<main class="container">
+    <!-- 입력 패널 -->
+     <section class="input-panel">
+        <div class="row">
+            <div class="field">
+                <select id="region">
+                    <option value="" disabled selected>지역 선택</option>
+                    <option value="108">서울특별시</option>
+                    <option value="159">부산광역시</option>
+                </select>
+            </div>
+            <div class="field">
+                <input type="date" placeholder="시작 날짜">
+            </div>
+            <div class="tilde">~</div>
+            <div class="field">
+                <input type="date" placeholder="종료 날짜">
+            </div>
+        </div>
+     </section>
+
+    <!-- 기능 카드 3개 -->
+     <section class="cards">
+        <article class="card">
+            <h3>월별 날씨 정보 조회</h3>
+            <button id="btnCalendar" class="btn" disabled>
+                <span class="icon">🔍</span> 검색
+            </button>
+        </article>
+
+        <article class="card">
+            <h3>여행 갈 날짜 추천</h3>
+            <button id="btnDateReco" class="btn" disabled>
+                <span class="icon">🔍</span> 검색
+            </button>
+        </article>
+
+        <article class="card">
+            <h3>여행 갈 장소 추천</h3>
+            <button id="btnPlaceReco" class="btn" disabled>
+                <span class="icon">🔍</span> 검색
+            </button>
+        </article>
+     </section>
+
+    <!-- 인기 조회 지역 + 즐겨찾기 -->
+     <section class="flex" style="margin-top:20px;">
+        <article class="card card--sb">
+            <h3 style="margin-top:0;">인기 조회 지역 ⭐</h3>  <!--big을 안쓰네?-->
+            <ol id="popularList" class="rank"></ol>
+        </article>
+
+        <button id="btnFavorites" class="btn" disabled>
+            <span class="icon">⭐</span> <span class="u_underline">즐겨찾기 보러가기</span>
+        </button>
+     </section>
+  
+</main>
+
+<!-- 공통/홈 스크립트 -->
+<script src="js/app.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>
