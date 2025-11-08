@@ -1,7 +1,7 @@
 <?php
 /**
  * File: src/model/AnalysisModel.php
- * Author: 김연수 (코드 통합 및 기능 구현)
+ * Author: 김연수
  * Description: 고급 분석 기능을 위한 Model 클래스. (3-1, 3-2, 3-3 기능 포함)
  * Last Updated: 2025-11-08
  */
