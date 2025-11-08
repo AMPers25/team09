@@ -1,10 +1,12 @@
 <?php
 // File: test/controller/BestRegionControllerTest.php
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../src/controller/BestRegionController.php';
+require_once __DIR__ . '/../../src/model/BestRegionModel.php';
 
 use PHPUnit\Framework\TestCase;
 use App\Model\BestRegionModel;
-use App\Controller\BestRegionController; // Controller 클래스 참조
+use App\Controller\BestRegionController;
 
 class BestRegionControllerTest extends TestCase
 {
@@ -34,23 +36,26 @@ class BestRegionControllerTest extends TestCase
             ['region_code' => '48011', 'region_name' => '제주시', 'province' => null, 'avg_ti_score' => 93.55, 'rank' => 1]
         ];
 
-        // 1. Model Mocking: 성공 데이터 반환 설정
+        // 1. Model Mocking: Model의 비즈니스 메소드 Mock
         $modelMock = $this->createMock(BestRegionModel::class);
         $modelMock->expects($this->once())
             ->method('getBestRegionRanking')
             ->with($startDate, $endDate) // 날짜 파라미터가 정확히 전달되는지 검증
             ->willReturn($mockData);
 
-        // 2. Controller Mocking (응답 헬퍼 함수 Mocking)
+        // 2. Controller Mocking (getModel 헬퍼 함수를 Mocking)
         $controllerMock = $this->getMockBuilder(\App\Controller\BestRegionController::class)
-            ->setConstructorArgs([$this->createMock(\PDO::class)]) // Mock DB 커넥션 주입
-            ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidDateFormat']) // 헬퍼 함수 및 날짜 유효성 검사 Mocking
+            ->setConstructorArgs([$this->createMock(\PDO::class)])
+            ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidDateFormat', 'getModel']) // Mocking 대상에 getModel 추가
             ->getMock();
 
-        // 3. Controller 내부의 날짜 검증 함수가 true를 반환하도록 Mocking
+        // 3. getModel() 호출 시 Model Mock을 반환하도록 설정 (의존성 주입 대체)
+        $controllerMock->method('getModel')->willReturn($modelMock);
+
+        // 4. Controller 내부의 날짜 검증 함수가 true를 반환하도록 Mocking
         $controllerMock->method('isValidDateFormat')->willReturn(true);
 
-        // 4. Controller의 sendResponse가 예상대로 (200 OK) 호출되는지 검증
+        // 5. Controller의 sendResponse가 예상대로 (200 OK) 호출되는지 검증
         $controllerMock->expects($this->once())
             ->method('sendResponse')
             ->with(
@@ -59,7 +64,7 @@ class BestRegionControllerTest extends TestCase
                 $this->equalTo($mockData)
             );
 
-        // 5. 메소드 실행
+        // 6. 메소드 실행
         $controllerMock->getRegionRankingAction(['start_date' => $startDate, 'end_date' => $endDate]);
     }
 
@@ -69,13 +74,13 @@ class BestRegionControllerTest extends TestCase
      */
     public function getRegionRankingAction_shouldReturn400_onMissingParameters()
     {
-        // DB 호출은 없어야 함
+        // DB 호출이 발생하지 않아야 함
         $dbMock = $this->createMock(\PDO::class);
         $dbMock->expects($this->never())->method('prepare');
 
         $controllerMock = $this->getMockBuilder(\App\Controller\BestRegionController::class)
             ->setConstructorArgs([$dbMock])
-            ->onlyMethods(['sendResponse', 'sendErrorResponse'])
+            ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidDateFormat', 'getModel'])
             ->getMock();
 
         // sendErrorResponse가 400 상태로 호출되는지 검증
@@ -96,19 +101,25 @@ class BestRegionControllerTest extends TestCase
      */
     public function getRegionRankingAction_shouldReturn500_onModelException()
     {
-        // 1. DB Mock 설정: Model이 PDOException을 던지도록 유도
-        $dbMock = $this->createMock(\PDO::class);
-        $dbMock->method('prepare')->willThrowException(new \PDOException("DB connection fail"));
+        $startDate = '2024-10-01';
+        $endDate = '2024-10-31';
+
+        // 1. Model Mocking: Model이 Exception을 던지도록 설정
+        $modelMock = $this->createMock(\App\Model\BestRegionModel::class);
+        $modelMock->method('getBestRegionRanking')
+            ->willThrowException(new \Exception("지역 랭킹 분석 중 서버 내부 오류가 발생했습니다."));
 
         // 2. Controller Mocking
         $controllerMock = $this->getMockBuilder(\App\Controller\BestRegionController::class)
-            ->setConstructorArgs([$dbMock])
-            ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidDateFormat'])
+            ->setConstructorArgs([$this->createMock(\PDO::class)])
+            ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidDateFormat', 'getModel'])
             ->getMock();
 
-        $controllerMock->method('isValidDateFormat')->willReturn(true); // 날짜 형식 통과
+        // 3. getModel() 호출 시 Mock Model을 반환하도록 설정
+        $controllerMock->method('getModel')->willReturn($modelMock);
+        $controllerMock->method('isValidDateFormat')->willReturn(true);
 
-        // 3. Controller의 sendErrorResponse가 500 상태로 호출되는지 검증
+        // 4. Controller의 sendErrorResponse가 500 상태로 호출되는지 검증
         $controllerMock->expects($this->once())
             ->method('sendErrorResponse')
             ->with(
@@ -116,8 +127,8 @@ class BestRegionControllerTest extends TestCase
                 $this->stringContains("서버 내부 오류입니다.")
             );
 
-        // 4. 메소드 실행
-        $controllerMock->getRegionRankingAction(['start_date' => '2024-10-01', 'end_date' => '2024-10-31']);
+        // 5. 메소드 실행
+        $controllerMock->getRegionRankingAction(['start_date' => $startDate, 'end_date' => $endDate]);
     }
 
     /**
@@ -126,24 +137,24 @@ class BestRegionControllerTest extends TestCase
      */
     public function getRegionRankingAction_shouldReturn404_onEmptyResult()
     {
-        $mockData = []; // 빈 데이터
+        $startDate = '2024-10-01';
+        $endDate = '2024-10-31';
 
-        // 1. DB Mock 설정: 빈 배열 반환을 유도
-        $stmtMock = $this->createMock(\PDOStatement::class);
-        $stmtMock->method('fetchAll')->willReturn($mockData);
-
-        $dbMock = $this->createMock(\PDO::class);
-        $dbMock->method('prepare')->willReturn($stmtMock);
+        // 1. Model Mocking: 빈 배열 반환을 유도
+        $modelMock = $this->createMock(\App\Model\BestRegionModel::class);
+        $modelMock->method('getBestRegionRanking')->willReturn([]);
 
         // 2. Controller Mocking
         $controllerMock = $this->getMockBuilder(\App\Controller\BestRegionController::class)
-            ->setConstructorArgs([$dbMock])
-            ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidDateFormat'])
+            ->setConstructorArgs([$this->createMock(\PDO::class)])
+            ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidDateFormat', 'getModel'])
             ->getMock();
 
+        // 3. getModel() 호출 시 Mock Model을 반환하도록 설정
+        $controllerMock->method('getModel')->willReturn($modelMock);
         $controllerMock->method('isValidDateFormat')->willReturn(true);
 
-        // 3. Controller의 sendErrorResponse가 404 상태로 호출되는지 검증
+        // 4. Controller의 sendErrorResponse가 404 상태로 호출되는지 검증
         $controllerMock->expects($this->once())
             ->method('sendErrorResponse')
             ->with(
@@ -151,7 +162,7 @@ class BestRegionControllerTest extends TestCase
                 $this->stringContains("해당 기간의 지역 분석 데이터가 없습니다.")
             );
 
-        // 4. 메소드 실행
-        $controllerMock->getRegionRankingAction(['start_date' => '2024-10-01', 'end_date' => '2024-10-31']);
+        // 5. 메소드 실행
+        $controllerMock->getRegionRankingAction(['start_date' => $startDate, 'end_date' => $endDate]);
     }
 }

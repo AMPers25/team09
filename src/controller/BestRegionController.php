@@ -12,6 +12,35 @@ class BestRegionController
         $this->dbConnection = $dbConnection;
     }
 
+    // Model 생성을 담당하는 헬퍼 함수 (Mocking 대상)
+    protected function getModel(): \App\Model\BestRegionModel
+    {
+        // Model 인스턴스 생성 로직
+        return new \App\Model\BestRegionModel($this->dbConnection);
+    }
+
+    // JSON 성공 응답을 보내는 헬퍼 함수 (Mocking 가능하도록 protected 유지)
+    protected function sendResponse(int $status, string $message, array $data)
+    {
+        header('Content-Type: application/json');
+        http_response_code($status);
+        echo json_encode(['status' => $status, 'message' => $message, 'data' => $data]);
+    }
+
+    // JSON 오류 응답을 보내는 헬퍼 함수
+    protected function sendErrorResponse(int $status, string $message)
+    {
+        header('Content-Type: application/json');
+        http_response_code($status);
+        echo json_encode(['status' => $status, 'message' => $message]);
+    }
+
+    // 날짜 유효성 검사 함수
+    protected function isValidDateFormat(string $date): bool
+    {
+        return (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/', $date);
+    }
+
     /**
      * 기능 3-3 API 핸들러: 지역별 여행 적합 지역 추천 (Top 5)
      * URL: GET /api/travel-index/region-ranking
@@ -27,8 +56,7 @@ class BestRegionController
         $startDate = $queryParams['start_date'];
         $endDate = $queryParams['end_date'];
 
-        // 2. 입력값 형식 검증 (YYYY-MM-DD 형식 검사)
-        // 실제 프로젝트에서는 더 강력한 날짜 유효성 검사가 필요합니다.
+        // 2. 입력값 형식 검증
         if (!$this->isValidDateFormat($startDate) || !$this->isValidDateFormat($endDate)) {
             $this->sendErrorResponse(400, "날짜 형식이 유효하지 않습니다. (YYYY-MM-DD 형식이 필요합니다.)");
             return;
@@ -36,12 +64,12 @@ class BestRegionController
 
         // 3. Model 호출 및 데이터 가져오기
         try {
-            // Model 클래스를 BestRegionModel로 사용
-            $model = new BestRegionModel($this->dbConnection);
+            // **[수정]** Model 생성을 getModel() 헬퍼 함수로 변경!
+            $model = $this->getModel();
+
             $results = $model->getBestRegionRanking($startDate, $endDate);
 
             if (empty($results)) {
-                // 404 Not Found (데이터가 없는 경우)
                 $this->sendErrorResponse(404, "해당 기간의 지역 분석 데이터가 없습니다.");
                 return;
             }
@@ -55,6 +83,4 @@ class BestRegionController
             $this->sendErrorResponse(500, "서버 내부 오류입니다.");
         }
     }
-
-    // ... (sendResponse, sendErrorResponse, isValidDateFormat 헬퍼 함수는 생략)
 }
