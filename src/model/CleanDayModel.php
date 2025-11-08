@@ -2,7 +2,7 @@
 /**
  * File: src/model/CleanDayModel.php
  * Author: 김연수
- * Description: 고급 분석 기능을 위한 Model 클래스. (3-1, 3-2, 3-3 기능 포함)
+ * Description: 클린데이(미세먼지 연속 좋음 일수) 계산 위한 Model 클래스.
  * Last Updated: 2025-11-08
  */
 
