@@ -1,8 +1,9 @@
 <?php
 // File: test/controller/BestPeriodControllerTest.php
 
-// Composer Autoload를 로드하여 모든 클래스를 사용 가능하게 함
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../src/controller/BestPeriodController.php';
+require_once __DIR__ . '/../../src/model/BestPeriodModel.php';
 
 use PHPUnit\Framework\TestCase;
 use App\Model\BestPeriodModel;
@@ -10,18 +11,17 @@ use App\Controller\BestPeriodController;
 
 class BestPeriodControllerTest extends TestCase
 {
-    // Controller에서 sendResponse/sendErrorResponse가 호출되기 전에
-    // 출력 버퍼를 시작하여 실제 HTTP 헤더 전송을 막습니다.
+    // 테스트 전에 출력 버퍼를 시작합니다.
     protected function setUp(): void
     {
-        if (!ob_get_level()) { // 버퍼가 시작되지 않은 경우에만 시작
+        if (!ob_get_level()) {
             ob_start();
         }
     }
 
+    // 테스트 후에 출력 버퍼를 정리합니다.
     protected function tearDown(): void
     {
-        // 테스트 후 버퍼를 정리합니다.
         ob_end_clean();
     }
 
@@ -36,30 +36,22 @@ class BestPeriodControllerTest extends TestCase
             ['start_date' => '2024-10-07', 'end_date' => '2024-10-13', 'avg_ti_score' => 93.55, 'rank' => 1]
         ];
 
-        // 1. Model Mocking: 성공 데이터 반환하도록 설정
-        $modelMock = $this->createMock(BestPeriodModel::class);
-        $modelMock->expects($this->once())
-            ->method('getBestWeekRanking')
-            ->with($regionCode)
-            ->willReturn($mockData);
+        // 1. PDO/Statement Mocking: 성공 데이터 반환 설정
+        $stmtMock = $this->createMock(\PDOStatement::class);
+        $stmtMock->method('execute')->willReturn(true);
+        $stmtMock->method('fetchAll')->willReturn($mockData);
 
-        // 2. Controller Mocking: protected 메소드인 sendResponse/sendErrorResponse를 Mock하여
-        //    실제 HTTP 헤더 전송을 막고, 호출 여부와 파라미터를 검증합니다.
-        $controller = $this->getMockBuilder(\App\Controller\BestPeriodController::class)
-            ->setConstructorArgs([null]) // DB 커넥션은 무시
-            ->onlyMethods(['__construct', 'getWeekRankingAction']) // Mocking하지 않을 메소드만 남기고 나머지는 Mock
-            ->getMock();
+        $dbMock = $this->createMock(\PDO::class);
+        $dbMock->method('prepare')->willReturn($stmtMock);
 
-        // Model Mock을 Controller의 의존성으로 대체 (Mocking을 위해 코드를 단순화)
-        // Controller 내부에서 new BestPeriodModel을 사용하는 로직을 우회할 수 있도록 MockBuilder를 재정의합니다.
-
-        // **Controller 로직이 Mock을 사용하도록 직접 Mocking합니다.**
+        // 2. Controller Mocking (sendResponse 헬퍼 함수를 Mocking)
+        // Controller가 Model을 생성하고 DB Mock을 전달하는 흐름을 따릅니다.
         $controllerMock = $this->getMockBuilder(\App\Controller\BestPeriodController::class)
-            ->setConstructorArgs([$this->createMock(\PDO::class)]) // Mock PDO 커넥션 주입
-            ->onlyMethods(['sendResponse', 'sendErrorResponse']) // <-- 헬퍼 함수 Mocking
+            ->setConstructorArgs([$dbMock]) // Mock DB 커넥션 주입
+            ->onlyMethods(['sendResponse', 'sendErrorResponse']) // 헬퍼 함수 Mocking
             ->getMock();
 
-        // 3. Controller의 sendResponse가 예상대로 호출되는지 검증
+        // 3. Controller의 sendResponse가 예상대로 (200 OK) 호출되는지 검증
         $controllerMock->expects($this->once())
             ->method('sendResponse')
             ->with(
@@ -78,7 +70,7 @@ class BestPeriodControllerTest extends TestCase
      */
     public function getWeekRankingAction_shouldReturn400_onMissingRegionCode()
     {
-        // 1. DB Mock (DB 호출이 발생하지 않음을 가정)
+        // 1. DB Mock 설정: Model 호출 방지 검증을 위해 DB 호출이 없어야 함
         $dbMock = $this->createMock(\PDO::class);
         $dbMock->expects($this->never())->method('prepare');
 
@@ -88,7 +80,7 @@ class BestPeriodControllerTest extends TestCase
             ->onlyMethods(['sendResponse', 'sendErrorResponse'])
             ->getMock();
 
-        // Controller의 sendErrorResponse가 400 상태로 호출되는지 검증
+        // 3. Controller의 sendErrorResponse가 400 상태로 호출되는지 검증
         $controllerMock->expects($this->once())
             ->method('sendErrorResponse')
             ->with(
@@ -96,7 +88,7 @@ class BestPeriodControllerTest extends TestCase
                 $this->stringContains("필수 데이터 (region_code)가 누락되었습니다.")
             );
 
-        // 3. 메소드 실행 (파라미터 누락)
+        // 4. 메소드 실행 (파라미터 누락)
         $controllerMock->getWeekRankingAction([]);
     }
 
@@ -108,6 +100,7 @@ class BestPeriodControllerTest extends TestCase
     {
         // 1. DB Mock 설정: Model이 PDOException을 던지도록 유도
         $dbMock = $this->createMock(\PDO::class);
+        // prepare() 호출 시 DB 오류를 강제 발생시켜 Model 내부에서 Exception이 던져지게 함
         $dbMock->method('prepare')->willThrowException(new \PDOException("DB connection fail"));
 
         // 2. Controller Mocking
@@ -134,9 +127,11 @@ class BestPeriodControllerTest extends TestCase
      */
     public function getWeekRankingAction_shouldReturn404_onEmptyResult()
     {
+        $mockData = []; // 빈 데이터 (Model의 return 값)
+
         // 1. DB Mock 설정: 빈 배열 반환을 유도
         $stmtMock = $this->createMock(\PDOStatement::class);
-        $stmtMock->method('fetchAll')->willReturn([]); // 빈 데이터 반환하도록 설정
+        $stmtMock->method('fetchAll')->willReturn($mockData); // 빈 데이터 반환하도록 설정
 
         $dbMock = $this->createMock(\PDO::class);
         $dbMock->method('prepare')->willReturn($stmtMock);
