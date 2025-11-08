@@ -6,6 +6,8 @@
  * Last Updated: 2025-11-08
  */
 
+namespace App\Model;
+
 class AnalysisModel {
     private $db; // DB 연결 객체 (PDO 등)
 

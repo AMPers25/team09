@@ -1,6 +1,4 @@
 <?php
-use PHPUnit\Framework\TestCase;
-
 /**
  * File: test/model/AnalysisModelTest.php
  * Author: 김연수
@@ -9,8 +7,12 @@ use PHPUnit\Framework\TestCase;
  */
 
 // 임시
-// AnalysisModel 클래스를 로드해야 합니다. (실제 환경에서는 Autoload로 처리)
-// require_once 'AnalysisModel.php';
+// 1. Composer Autoload 로드 (테스트용)
+require_once __DIR__ . '/../../vendor/autoload.php';
+
+use PHPUnit\Framework\TestCase;
+use App\Model\AnalysisModel;
+
 
 class AnalysisModelTest extends TestCase
 {
