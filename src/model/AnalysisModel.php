@@ -7,6 +7,7 @@
  */
 
 namespace App\Model;
+use Exception;
 
 class AnalysisModel {
     private $db; // DB 연결 객체 (PDO 등)
@@ -80,19 +81,19 @@ class AnalysisModel {
             $stmt = $this->db->prepare($sql);
 
             // 2. 바인딩 (사용자 입력: region_code)
-            // PDO::PARAM_STR은 문자열 타입 바인딩에 안전합니다.
-            $stmt->bindParam(':regionCode', $regionCode, PDO::PARAM_STR);
+            // PDO::PARAM_STR은 문자열 타입 바인딩에 안전
+            $stmt->bindParam(':regionCode', $regionCode, \PDO::PARAM_STR);
 
             // 3. 실행 및 결과 반환
             $stmt->execute();
 
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             // 데이터베이스 오류 처리 및 로깅
             error_log("DB Error in getCleanStreakRanking: " . $e->getMessage());
             // Controller에서 500 응답을 처리하도록 예외 던지기
-            throw new Exception("PM10 클린 기간 분석 중 서버 내부 오류가 발생했습니다.");
+            throw new \Exception("PM10 클린 기간 분석 중 서버 내부 오류가 발생했습니다.");
         }
     }
 
