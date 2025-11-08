@@ -7,6 +7,8 @@
  * Last Updated: 2025-11-08
  */
 
+namespace App\Controller;
+
 class BestPeriodController
 {
     private $dbConnection;
@@ -49,7 +51,7 @@ class BestPeriodController
     /**
      * JSON 성공 응답을 보내는 헬퍼 함수 (API 명세서 형식 준수)
      */
-    private function sendResponse(int $status, string $message, array $data)
+    protected function sendResponse(int $status, string $message, array $data)
     {
         header('Content-Type: application/json');
         http_response_code($status);
@@ -59,7 +61,7 @@ class BestPeriodController
     /**
      * JSON 오류 응답을 보내는 헬퍼 함수
      */
-    private function sendErrorResponse(int $status, string $message)
+    protected function sendErrorResponse(int $status, string $message)
     {
         header('Content-Type: application/json');
         http_response_code($status);
