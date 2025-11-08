@@ -1,2 +1,9 @@
 # IDE Files
 .idea/
+
+
+# Composer Dependencies
+/vendor/
+
+# Composer Lock (선택 사항이지만, 대부분 추적함)
+# composer.lock
