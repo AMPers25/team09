@@ -2,7 +2,7 @@
 /**
  * File: test/model/CleanDayModelTest.php
  * Author: 김연수
- * Description: 클린데이(미세먼지 연속 좋음 일수) 계산 위한  Test 클래스
+ * Description: 기능 3-1. 클린데이(미세먼지 연속 좋음 일수) 계산하는 Test 클래스
  * Last Updated: 2025-11-08
  */
 

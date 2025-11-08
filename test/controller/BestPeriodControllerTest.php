@@ -1,5 +1,10 @@
 <?php
-// File: test/controller/BestPeriodControllerTest.php
+/**
+ * File: src/model/BestPeriodControllerTest.php
+ * Author: 김연수
+ * Description: 기능 3-2. 여행 기간 추천 컨트롤러 테스트
+ * Last Updated: 2025-11-08
+ */
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../src/controller/BestPeriodController.php';

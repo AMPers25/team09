@@ -1,5 +1,12 @@
 <?php
-// File: test/controller/BestRegionControllerTest.php
+/**
+ * File: src/model/BestRegionControllerTest.php
+ * Author: 김연수
+ * Description: 기능 3-3. 여행 지역 추천 컨트롤러 테스트
+ * Last Updated: 2025-11-08
+ */
+
+// File: test/controller/
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../src/controller/BestRegionController.php';
 require_once __DIR__ . '/../../src/model/BestRegionModel.php';

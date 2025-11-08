@@ -1,5 +1,11 @@
 <?php
-// File: src/model/BestRegionModel.php
+/**
+ * File: src/model/BestRegionModel.php
+ * Author: 김연수
+ * Description: 기능 3-3. 여행 지역 추천 Model
+ * Last Updated: 2025-11-08
+ */
+
 namespace App\Model;
 
 class BestRegionModel {

@@ -1,11 +1,15 @@
 <?php
-// File: test/model/BestPeriodModelTest.php
+/**
+ * File: src/model/BestPeriodModelTest.php
+ * Author: 김연수
+ * Description: 기능 3-2. 여행 기간 추천 모델 테스트
+ * Last Updated: 2025-11-08
+ */
+
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use PHPUnit\Framework\TestCase;
 use App\Model\BestPeriodModel;
-
-// 변경된 클래스 이름 참조
 
 class BestPeriodModelTest extends TestCase
 {

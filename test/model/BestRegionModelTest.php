@@ -1,5 +1,11 @@
 <?php
-// File: test/model/BestRegionModelTest.php
+/**
+ * File: src/model/BestRegionModelTest.php
+ * Author: 김연수
+ * Description: 기능 3-3. 여행 지역 추천 모델 테스트
+ * Last Updated: 2025-11-08
+ */
+
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use PHPUnit\Framework\TestCase;
