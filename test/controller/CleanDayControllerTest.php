@@ -1,6 +1,10 @@
 <?php
-// File: test/controller/CleanDayControllerTest.php
-// 기능 3-1: PM10 클린 기간 추천 Controller 테스트
+/**
+ * File: test/model/CleanDayControllerTest.php
+ * Author: 김연수
+ * Description: 기능 3-1. 클린데이(미세먼지 연속 좋음 일수) 계산하는 Test 클래스
+ * Last Updated: 2025-11-08
+ */
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 // Controller와 Model 파일을 수동으로 로드 (Autoload 실패 방지용)
