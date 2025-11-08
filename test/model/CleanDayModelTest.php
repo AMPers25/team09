@@ -1,6 +1,6 @@
 <?php
 /**
- * File: test/model/AnalysisModelTest.php
+ * File: test/model/CleanDayModelTest.php
  * Author: 김연수
  * Description: 고급 분석 기능을 위한 Test 클래스. (3-1, 3-2, 3-3 기능 포함)
  * Last Updated: 2025-11-08
@@ -11,10 +11,10 @@
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use PHPUnit\Framework\TestCase;
-use App\Model\AnalysisModel;
+use App\Model\CleanDayModel;
 
 
-class AnalysisModelTest extends TestCase
+class CleanDayModelTest extends TestCase
 {
     /**
      * @test
@@ -54,7 +54,7 @@ class AnalysisModelTest extends TestCase
 
 
         // 3. Model 인스턴스 생성 및 Mock DB 주입
-        $model = new AnalysisModel($dbMock);
+        $model = new \App\Model\CleanDayModel($dbMock);
 
         // 4. 메소드 실행 및 결과 검증
         $actualResult = $model->getCleanStreakRanking($regionCode);
@@ -84,7 +84,7 @@ class AnalysisModelTest extends TestCase
             ->willReturn($stmtMock);
 
         // 3. Model 인스턴스 생성 및 Mock DB 주입
-        $model = new AnalysisModel($dbMock);
+        $model = new \App\Model\CleanDayModel($dbMock);
 
         // 4. 메소드 실행 (예외가 발생하는지 확인)
         $model->getCleanStreakRanking('BUSAN');

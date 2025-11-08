@@ -1,6 +1,6 @@
 <?php
 /**
- * File: src/model/AnalysisModel.php
+ * File: src/model/CleanDayModel.php
  * Author: 김연수
  * Description: 고급 분석 기능을 위한 Model 클래스. (3-1, 3-2, 3-3 기능 포함)
  * Last Updated: 2025-11-08
@@ -9,7 +9,7 @@
 namespace App\Model;
 use Exception;
 
-class AnalysisModel {
+class CleanDayModel {
     private $db; // DB 연결 객체 (PDO 등)
 
     /**

@@ -1,16 +1,14 @@
 <?php
 /**
- * File: src/model/AnalysisController.php
+ * File: src/model/CleanDayController.php
  * Author: 김연수
  * Description: 고급 분석 기능을 위한 Controller 클래스. (3-1, 3-2, 3-3 기능 포함)
  * Last Updated: 2025-11-08
  */
 
 // 임시
-// require 'AnalysisModel.php'; // 실제 환경에서는 Autoload 필요
-// require 'DB.php';           // 실제 환경에서는 DB 연결 클래스 필요
 
-class AnalysisController
+class CleanDayController
 {
     private $dbConnection;
 
@@ -43,7 +41,7 @@ class AnalysisController
 
         try {
             // 3. Model 인스턴스 생성 및 DB 연결 주입
-            $model = new AnalysisModel($this->dbConnection);
+            $model = new \App\Model\CleanDayModel($this->dbConnection);
 
             // 4. Model 메소드 호출 (핵심 비즈니스 로직 실행)
             $rankingData = $model->getCleanStreakRanking($regionCode);
