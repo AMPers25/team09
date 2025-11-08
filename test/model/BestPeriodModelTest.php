@@ -3,7 +3,9 @@
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use PHPUnit\Framework\TestCase;
-use App\Model\BestPeriodModel; // 변경된 클래스 이름 참조
+use App\Model\BestPeriodModel;
+
+// 변경된 클래스 이름 참조
 
 class BestPeriodModelTest extends TestCase
 {
@@ -69,7 +71,7 @@ class BestPeriodModelTest extends TestCase
 
         // 2. 예외가 발생하는지 검증
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage("기간 랭킹 분석 중 서버 내부 오류가 발생했습니다.");
+        $this->expectExceptionMessage("주간 랭킹 분석 중 서버 내부 오류가 발생했습니다.");
 
         $model->getBestWeekRanking($regionCode);
     }
