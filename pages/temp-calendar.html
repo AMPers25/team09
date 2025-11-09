@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>날씨 달력</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../assets/css/calendar.css">
 </head>
 <body>
     <!-- 상단 네비게이션 바 -->
     <div class="top-nav">
         <div class="nav-left">
-            <button class="home-btn">🏠</button>
+            <button class="home-btn" aria-label="홈으로 이동">🏠</button>
             <div class="search-bar">
                 <span>검색</span>
                 <span class="dropdown-icon">▼</span>
@@ -22,219 +22,355 @@
             <button class="nav-tab" data-tab="alerts">경보특보</button>
         </div>
     </div>
+
     <!-- 메인 콘텐츠 -->
     <div class="main-content">
         <!-- 왼쪽 통계 패널 -->
         <div class="stats-panel">
             <div class="stat-section">
                 <div class="stat-label">월평균</div>
-                <div class="stat-value" id="avgTemp">23°</div>
+                <div class="stat-value" id="avgTemp">--</div>
             </div>
             <div class="stat-section">
                 <div class="stat-label">최소/최대</div>
-                <div class="stat-value" id="minMaxTemp">17°/27°</div>
+                <div class="stat-value" id="minMaxTemp">--</div>
             </div>
         </div>
 
         <!-- 달력 영역 -->
         <div class="calendar-container">
-            <!-- 달력 네비게이션 -->
             <div class="secondary-nav">
                 <div class="calendar-controls">
                     <span class="year-display">2024년</span>
-                    <button class="nav-arrow" onclick="changeMonth(-1)">‹</button>
+                    <button class="nav-arrow" type="button" aria-label="이전 달" onclick="changeMonth(-1)">‹</button>
                     <span class="month-display" id="currentMonthDisplay">9월</span>
-                    <button class="nav-arrow" onclick="changeMonth(1)">›</button>
+                    <button class="nav-arrow" type="button" aria-label="다음 달" onclick="changeMonth(1)">›</button>
                 </div>
             </div>
-            <div id="calendar" class="calendar-grid">
-                <!-- 달력이 여기에 동적으로 생성됩니다 -->
+            <div class="calendar-content">
+                <div class="week-averages" id="weekAverages"></div>
+                <div class="calendar-main">
+                    <div class="day-headers" id="dayHeaders"></div>
+                    <div class="days-grid" id="daysGrid"></div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- 서버에서 JSON을 주입할 수 있는 영역 -->
+    <!--
+    <script id="embeddedCalendarData" type="application/json">
+        { ... }
+    </script>
+    -->
+
     <script>
-        // 현재 표시할 연도와 월 (연도는 2024년으로 고정)
         const FIXED_YEAR = 2024;
+        const WEATHER_ICON_MAP = {
+            '맑음': './icons/clear.png',
+            '구름': './icons/partly_cloudy.png',
+            '흐림': './icons/mostly_cloudy.png',
+            '흐린': './icons/overcast.png',
+            '비': './icons/rain.png',
+            '눈': './icons/snow.png'
+        };
+
         let currentDate = new Date(FIXED_YEAR, new Date().getMonth(), 1);
         let calendarData = null;
-        let currentTab = 'temperature'; // 기온, 강수량, 경보특보
+        let currentTab = 'temperature';
+        let activeDayCell = null;
 
-        // 초기화
-        document.addEventListener('DOMContentLoaded', function() {
+        const serverCalendarData = (() => {
+            const scriptEl = document.getElementById('embeddedCalendarData');
+            if (scriptEl) {
+                try {
+                    return JSON.parse(scriptEl.textContent);
+                } catch (error) {
+                    console.warn('임베디드 캘린더 데이터를 파싱하지 못했습니다.', error);
+                }
+            }
+            if (window.__CALENDAR_DATA__) {
+                return window.__CALENDAR_DATA__;
+            }
+            return null;
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => {
             loadCalendarData();
             setupTabHandlers();
+            window.addEventListener('resize', debounce(syncWeekRowHeights, 100));
         });
 
-        // 탭 핸들러 설정
+        function debounce(fn, delay = 150) {
+            let timer = null;
+            return function (...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
         function setupTabHandlers() {
             const tabs = document.querySelectorAll('.nav-tab');
             tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
+                tab.addEventListener('click', function () {
                     tabs.forEach(t => t.classList.remove('active'));
                     this.classList.add('active');
                     currentTab = this.dataset.tab;
-                    // 탭 변경 시 필요한 로직 추가 가능
                 });
             });
         }
 
-        // 달 변경 함수 (연도는 고정, 월만 변경)
         function changeMonth(direction) {
             const currentMonth = currentDate.getMonth();
             let newMonth = currentMonth + direction;
-            
-            // 월 범위 체크 (0-11)
+
             if (newMonth < 0) {
-                newMonth = 11; // 12월로
+                newMonth = 11;
             } else if (newMonth > 11) {
-                newMonth = 0; // 1월로
+                newMonth = 0;
             }
-            
+
             currentDate = new Date(FIXED_YEAR, newMonth, 1);
-            updateMonthDisplay();
             loadCalendarData();
         }
 
-        // 월 표시 업데이트
         function updateMonthDisplay() {
             const month = currentDate.getMonth() + 1;
             document.getElementById('currentMonthDisplay').textContent = `${month}월`;
         }
 
-        // 달력 데이터 로드 함수 (예시 데이터 사용)
         function loadCalendarData() {
-            const year = FIXED_YEAR; // 항상 2024년
+            const year = FIXED_YEAR;
             const month = currentDate.getMonth() + 1;
 
-            // 예시 데이터 생성
-            calendarData = generateSampleData(year, month);
+            const serverData = resolveServerCalendarData(year, month);
+            if (serverData) {
+                calendarData = normalizeCalendarData(serverData);
+            } else {
+                calendarData = generateSampleData(year, month);
+            }
+
             renderCalendar();
         }
 
-        // 예시 데이터 생성 함수
         function generateSampleData(year, month) {
             const daysInMonth = new Date(year, month, 0).getDate();
             const days = [];
-            const holidays = [13, 14, 15]; // 예시 공휴일 (이미지 참조)
-            
-            let totalMin = 0, totalMax = 0;
+            const holidays = [13, 14, 15];
             const weatherTypes = ['맑음', '구름', '흐림', '흐린', '비', '눈'];
-            
+
+            let totalMin = 0;
+            let totalMax = 0;
+
             for (let day = 1; day <= daysInMonth; day++) {
-                const minTemp = Math.floor(Math.random() * 10) + 15;
-                const maxTemp = minTemp + Math.floor(Math.random() * 10) + 5;
+                const minTemp = Math.floor(Math.random() * 8) + 14;
+                const maxTemp = minTemp + Math.floor(Math.random() * 9) + 4;
                 totalMin += minTemp;
                 totalMax += maxTemp;
-                
+
+                const weather = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+
                 days.push({
-                    day: day,
+                    day,
                     isHoliday: holidays.includes(day),
-                    weather: weatherTypes[Math.floor(Math.random() * weatherTypes.length)],
-                    minTemp: minTemp,
-                    maxTemp: maxTemp
+                    weather,
+                    minTemp,
+                    maxTemp
                 });
             }
 
             return {
                 region: '서울',
-                year: FIXED_YEAR, // 항상 2024년
-                month: month,
+                year,
+                month,
                 avgMinTemp: Math.round(totalMin / daysInMonth),
                 avgMaxTemp: Math.round(totalMax / daysInMonth),
                 monthMinTemp: Math.min(...days.map(d => d.minTemp)),
                 monthMaxTemp: Math.max(...days.map(d => d.maxTemp)),
-                days: days
+                weeklyAverages: [],
+                days
             };
         }
 
-        // 달력 렌더링 함수
+        function normalizeCalendarData(data) {
+            const clone = cloneData(data);
+            clone.weeklyAverages = Array.isArray(clone.weeklyAverages) ? clone.weeklyAverages : [];
+            clone.days = Array.isArray(clone.days)
+                ? clone.days.map(day => (day ? { ...day } : null))
+                : [];
+            return clone;
+        }
+
+        function cloneData(data) {
+            return typeof structuredClone === 'function'
+                ? structuredClone(data)
+                : JSON.parse(JSON.stringify(data));
+        }
+
+        function resolveServerCalendarData(year, month) {
+            if (!serverCalendarData) return null;
+            const dataSource = Array.isArray(serverCalendarData) ? serverCalendarData : [serverCalendarData];
+            const found = dataSource.find(item => {
+                if (!item || typeof item !== 'object') return false;
+                const yearMatches = !item.year || item.year === year;
+                const monthMatches = !item.month || item.month === month;
+                return yearMatches && monthMatches;
+            });
+            return found ? cloneData(found) : null;
+        }
+
+        function buildWeeks(days, year, month) {
+            const firstDay = new Date(year, month - 1, 1);
+            const startOffset = (firstDay.getDay() + 6) % 7;
+            const weeks = [];
+            let currentWeek = [];
+
+            for (let i = 0; i < startOffset; i++) {
+                currentWeek.push(null);
+            }
+
+            days.forEach(day => {
+                currentWeek.push(day);
+                if (currentWeek.length === 7) {
+                    weeks.push(currentWeek);
+                    currentWeek = [];
+                }
+            });
+
+            if (currentWeek.length > 0) {
+                while (currentWeek.length < 7) {
+                    currentWeek.push(null);
+                }
+                weeks.push(currentWeek);
+            }
+
+            return weeks;
+        }
+
+        function calculateWeeklyAverages(weeks) {
+            return weeks.map(week => {
+                const validDays = week.filter(Boolean);
+                if (!validDays.length) {
+                    return '-';
+                }
+
+                const avgMin = validDays.reduce((sum, day) => sum + day.minTemp, 0) / validDays.length;
+                const avgMax = validDays.reduce((sum, day) => sum + day.maxTemp, 0) / validDays.length;
+                return `${Math.round(avgMin)}° / ${Math.round(avgMax)}°`;
+            });
+        }
+
+        function syncWeekRowHeights() {
+            const weekItems = Array.from(document.querySelectorAll('.week-average-item'));
+            const dayCells = Array.from(document.querySelectorAll('.days-grid .day-cell'));
+            if (!weekItems.length || !dayCells.length) return;
+
+            weekItems.forEach(item => {
+                item.style.height = 'auto';
+            });
+
+            const rows = Math.ceil(dayCells.length / 7);
+            for (let i = 0; i < rows && i < weekItems.length; i++) {
+                const rowCells = dayCells.slice(i * 7, (i + 1) * 7);
+                const rowHeight = Math.max(...rowCells.map(cell => cell.getBoundingClientRect().height));
+                weekItems[i].style.height = `${rowHeight}px`;
+            }
+        }
+
         function renderCalendar() {
             if (!calendarData) return;
 
             const year = calendarData.year;
             const month = calendarData.month;
-            
-            // 통계 업데이트
+
             const avgTemp = Math.round((calendarData.avgMinTemp + calendarData.avgMaxTemp) / 2);
             document.getElementById('avgTemp').textContent = `${avgTemp}°`;
             document.getElementById('minMaxTemp').textContent = `${calendarData.monthMinTemp}°/${calendarData.monthMaxTemp}°`;
-            
+
             updateMonthDisplay();
 
-            // 달력 그리드 생성
-            const calendar = document.getElementById('calendar');
-            calendar.innerHTML = '';
+            const weekAveragesContainer = document.getElementById('weekAverages');
+            const dayHeadersContainer = document.getElementById('dayHeaders');
+            const daysGrid = document.getElementById('daysGrid');
 
-            // 주 평균 헤더와 요일 헤더
-            const weekHeader = document.createElement('div');
-            weekHeader.className = 'week-header';
-            weekHeader.textContent = '주 평균';
-            calendar.appendChild(weekHeader);
+            weekAveragesContainer.innerHTML = '';
+            dayHeadersContainer.innerHTML = '';
+            daysGrid.innerHTML = '';
 
-            const dayHeaders = ['월', '화', '수', '목', '금', '토', '일'];
-            dayHeaders.forEach(day => {
-                const header = document.createElement('div');
-                header.className = 'day-header';
-                header.textContent = day;
-                calendar.appendChild(header);
+            const averagingTitle = document.createElement('div');
+            averagingTitle.className = 'week-averages-title';
+            averagingTitle.textContent = '주 평균';
+            weekAveragesContainer.appendChild(averagingTitle);
+
+            ['월', '화', '수', '목', '금', '토', '일'].forEach(day => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'day-header';
+                headerCell.textContent = day;
+                dayHeadersContainer.appendChild(headerCell);
             });
 
-            // 첫 번째 날의 요일 계산 (월요일 = 1)
-            const firstDay = new Date(year, month - 1, 1).getDay();
-            const firstMonday = firstDay === 0 ? 6 : firstDay - 1; // 일요일을 6으로 변환
-            
-            // 이전 달의 빈 칸
-            for (let i = 0; i < firstMonday; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.className = 'day-cell other-month';
-                calendar.appendChild(emptyCell);
-            }
+            const weeks = buildWeeks(calendarData.days, year, month);
+            const weeklyAverages =
+                calendarData.weeklyAverages && calendarData.weeklyAverages.length
+                    ? calendarData.weeklyAverages
+                    : calculateWeeklyAverages(weeks);
 
-            // 날짜 칸 생성
-            calendarData.days.forEach(dayData => {
-                const dayCell = document.createElement('div');
-                dayCell.className = 'day-cell';
-                if (dayData.isHoliday) {
-                    dayCell.classList.add('holiday');
+            weeks.forEach((week, index) => {
+                const avgItem = document.createElement('div');
+                avgItem.className = 'week-average-item';
+                avgItem.textContent = weeklyAverages[index] ?? '-';
+                weekAveragesContainer.appendChild(avgItem);
+
+                week.forEach(dayData => {
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'day-cell';
+
+                    if (!dayData) {
+                        dayCell.classList.add('empty');
+                        daysGrid.appendChild(dayCell);
+                        return;
+                    }
+
+                    dayCell.classList.add('clickable');
+
+                    if (dayData.isHoliday) {
+                        dayCell.classList.add('holiday');
+                    }
+
+                    const weatherImage = WEATHER_ICON_MAP[dayData.weather] || WEATHER_ICON_MAP['맑음'];
+
+                    dayCell.innerHTML = `
+                        <div class="day-number ${dayData.isHoliday ? 'holiday-text' : ''}">${dayData.day}</div>
+                        <div class="weather-icon">
+                            <img src="${weatherImage}" alt="${dayData.weather}" class="weather-image">
+                        </div>
+                        <div class="temp-text">
+                            <span>${dayData.minTemp}°</span>
+                            <span>${dayData.maxTemp}°</span>
+                        </div>
+                    `;
+
+                    dayCell.addEventListener('click', () => {
+                        if (activeDayCell && activeDayCell !== dayCell) {
+                            activeDayCell.classList.remove('is-active');
+                        }
+                        activeDayCell = dayCell;
+                        dayCell.classList.add('is-active');
+                    });
+
+                    daysGrid.appendChild(dayCell);
+                });
+            });
+
+            if (!daysGrid.querySelector('.day-cell.is-active')) {
+                const firstClickable = daysGrid.querySelector('.day-cell.clickable');
+                if (firstClickable) {
+                    firstClickable.classList.add('is-active');
+                    activeDayCell = firstClickable;
                 }
-
-                // 날씨 타입별 이미지 매핑
-                const weatherIcons = {
-                    '맑음': './assets/clear.png',
-                    '구름': './assets/partly_cloudy.png',
-                    '흐림': './assets/mostly_cloudy.png',
-                    '흐린': './assets/overcast.png',
-                    '비': './assets/rain.png',
-                    '눈': './assets/snow.png'
-                };
-
-                const weatherImage = weatherIcons[dayData.weather] || './assets/clear.png';
-
-                dayCell.innerHTML = `
-                    <div class="day-number ${dayData.isHoliday ? 'holiday-text' : ''}">${dayData.day}</div>
-                    <div class="weather-icon">
-                        <img src="${weatherImage}" alt="${dayData.weather}" class="weather-image">
-                    </div>
-                    <div class="temp-text">
-                        <span>${dayData.minTemp}°</span>
-                        <span>${dayData.maxTemp}°</span>
-                    </div>
-                `;
-
-                calendar.appendChild(dayCell);
-            });
-
-            // 다음 달의 빈 칸
-            const totalCells = firstMonday + calendarData.days.length;
-            const remainingCells = 42 - totalCells - 1; // 주 평균 헤더 포함
-            for (let i = 0; i < remainingCells; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.className = 'day-cell other-month';
-                calendar.appendChild(emptyCell);
             }
 
-            document.getElementById('calendar').style.display = 'grid';
+            syncWeekRowHeights();
         }
     </script>
 </body>
