@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>날씨 상세 정보</title>
+    <link rel="stylesheet" href="../assets/css/day-info.css">
+</head>
+<body>
+    <header class="header-bar">
+        <div class="header-left">
+            <button class="back-button" aria-label="이전 화면으로">←</button>
+            <div class="location-select" role="button">
+                <span id="locationName">서울특별시</span>
+                <span>▼</span>
+            </div>
+        </div>
+        <div class="tab-group">
+            <button class="tab-button is-active">기온</button>
+            <button class="tab-button">강수량</button>
+            <button class="tab-button">경보특보</button>
+        </div>
+    </header>
+
+    <main class="page-wrapper">
+        <section class="summary-block">
+            <img id="summaryIcon" class="summary-icon" src="./icons/clear.png" alt="날씨 아이콘">
+            <div class="summary-details">
+                <div class="summary-date" id="summaryDate">2024년 9월 17일</div>
+                <div class="summary-temp" id="summaryTemp">18° / 25°</div>
+                <span class="summary-condition" id="summaryCondition">맑음</span>
+            </div>
+        </section>
+
+        <section class="card-grid">
+            <article class="info-card" id="temperatureCard">
+                <h2>Temperature</h2>
+                <div class="info-list" id="temperatureList"></div>
+            </article>
+            <article class="info-card" id="rainCard">
+                <h2>Rain</h2>
+                <div class="info-list" id="rainList"></div>
+            </article>
+            <article class="info-card" id="alertCard">
+                <h2>Weather Alert</h2>
+                <div class="info-list" id="alertList"></div>
+            </article>
+            <article class="info-card" id="airQualityCard">
+                <h2 id="airQualityTitle">Air Quality</h2>
+                <div class="air-quality-score" id="airQualityValue">--</div>
+                <div class="info-list" id="airQualityMeta"></div>
+            </article>
+        </section>
+    </main>
+
+    <!-- 서버 사이드에서 JSON을 주입할 수 있는 공간 -->
+    <!--
+    <script id="dayInfoData" type="application/json">
+        { ... }
+    </script>
+    -->
+
+    <script>
+        const WEATHER_ICON_MAP = {
+            '맑음': './icons/clear.png',
+            '구름': './icons/partly_cloudy.png',
+            '흐림': './icons/mostly_cloudy.png',
+            '흐린': './icons/overcast.png',
+            '비': './icons/rain.png',
+            '눈': './icons/snow.png'
+        };
+
+        const detailElements = {
+            locationName: document.getElementById('locationName'),
+            summaryIcon: document.getElementById('summaryIcon'),
+            summaryDate: document.getElementById('summaryDate'),
+            summaryTemp: document.getElementById('summaryTemp'),
+            summaryCondition: document.getElementById('summaryCondition'),
+            temperatureCard: document.getElementById('temperatureCard'),
+            temperatureList: document.getElementById('temperatureList'),
+            rainCard: document.getElementById('rainCard'),
+            rainList: document.getElementById('rainList'),
+            alertCard: document.getElementById('alertCard'),
+            alertList: document.getElementById('alertList'),
+            airQualityCard: document.getElementById('airQualityCard'),
+            airQualityTitle: document.getElementById('airQualityTitle'),
+            airQualityValue: document.getElementById('airQualityValue'),
+            airQualityMeta: document.getElementById('airQualityMeta')
+        };
+
+        function readServerData() {
+            const scriptEl = document.getElementById('dayInfoData');
+            if (scriptEl) {
+                try {
+                    return JSON.parse(scriptEl.textContent);
+                } catch (error) {
+                    console.warn('dayInfoData 파싱 실패', error);
+                }
+            }
+            if (window.__DAY_INFO__) {
+                return window.__DAY_INFO__;
+            }
+            return null;
+        }
+
+        function populateList(container, items = []) {
+            container.innerHTML = '';
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'info-row';
+                row.innerHTML = `<span>${item.label}</span><span>${item.value ?? '--'}</span>`;
+                container.appendChild(row);
+            });
+        }
+
+        function toggleBlock(element, hasContent) {
+            element.classList.toggle('is-hidden', !hasContent);
+        }
+
+        function applyDetailData(data) {
+            if (!data) return;
+
+            detailElements.locationName.textContent = data.location || '정보 없음';
+            detailElements.summaryDate.textContent = data.dateLabel || '--';
+            detailElements.summaryTemp.textContent = data.temperatureRange || '--';
+            detailElements.summaryCondition.textContent = data.condition || '--';
+
+            const iconSrc = data.icon || WEATHER_ICON_MAP[data.condition] || WEATHER_ICON_MAP['맑음'];
+            detailElements.summaryIcon.src = iconSrc;
+            detailElements.summaryIcon.alt = data.condition || '날씨 아이콘';
+
+            populateList(detailElements.temperatureList, data.temperature || []);
+            toggleBlock(detailElements.temperatureCard, (data.temperature || []).length > 0);
+
+            populateList(detailElements.rainList, data.rain || []);
+            toggleBlock(detailElements.rainCard, (data.rain || []).length > 0);
+
+            populateList(detailElements.alertList, data.weatherAlert || []);
+            toggleBlock(detailElements.alertCard, (data.weatherAlert || []).length > 0);
+
+            const air = data.airQuality;
+            if (air && (air.value != null || (air.meta && air.meta.length))) {
+                detailElements.airQualityTitle.textContent = air.title || 'Air Quality';
+                detailElements.airQualityValue.textContent = air.value ?? '--';
+                populateList(detailElements.airQualityMeta, air.meta || []);
+                detailElements.airQualityCard.classList.remove('is-hidden');
+            } else {
+                detailElements.airQualityCard.classList.add('is-hidden');
+                detailElements.airQualityMeta.innerHTML = '';
+            }
+        }
+
+        function createSampleData() {
+            return {
+                location: '서울특별시',
+                dateLabel: '2023년 9월 17일',
+                temperatureRange: '18° / 25°',
+                condition: '맑음',
+                icon: WEATHER_ICON_MAP['맑음'],
+                temperature: [
+                    { label: '평균기온', value: '21°' },
+                    { label: '최대기온', value: '25°' },
+                    { label: '최소기온', value: '18°' },
+                    { label: '일교차', value: '7°' }
+                ],
+                rain: [
+                    { label: '강수', value: '0.0mm' },
+                    { label: '습도', value: '45%' },
+                    { label: '바람', value: '2.1m/s' },
+                    { label: '운량', value: '2 oktas' }
+                ],
+                weatherAlert: [
+                        {
+                                label: '특보 분류',
+                                value: '폭염경보'
+                        },
+                        {
+                                label: '특보 시간',
+                                value: '12:00'
+                        }
+                ],
+                airQuality: {
+                    title: 'Air Quality - pm 10',
+                    value: '22.0',
+                    meta: [
+                        { label: '등급', value: '보통' },
+                        { label: '단위', value: '㎍/m³' }
+                    ]
+                }
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dayInfo = readServerData() || createSampleData();
+            applyDetailData(dayInfo);
+        });
+    </script>
+</body>
+</html>
