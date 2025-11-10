@@ -273,12 +273,55 @@
             }
         }
 
+        function formatDateToISO(year, month, day) {
+            const normalizedMonth = String(month).padStart(2, '0');
+            const normalizedDay = String(day).padStart(2, '0');
+            return `${year}-${normalizedMonth}-${normalizedDay}`;
+        }
+
+        async function resolveDayInfoLink(region, year, month, day) {
+            const dateParam = formatDateToISO(year, month, day);
+            const query = new URLSearchParams({
+                region,
+                date: dateParam
+            });
+
+            try {
+                const response = await fetch(`/api/day-info-link?${query.toString()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API 응답 오류: ${response.status}`);
+                }
+
+                const payload = await response.json();
+                if (payload && typeof payload.url === 'string' && payload.url.length > 0) {
+                    return payload.url;
+                }
+            } catch (error) {
+                console.warn('day-info 링크 API 호출 실패, 폴백 URL을 사용합니다.', error);
+            }
+
+            return `/pages/day-info.html?${query.toString()}`;
+        }
+
+        async function handleDaySelection(dayData, context) {
+            const { region, year, month } = context;
+            const targetUrl = await resolveDayInfoLink(region || '', year, month, dayData.day);
+            window.location.href = targetUrl;
+        }
+
         function renderCalendar() {
             if (!calendarData) return;
 
             const year = calendarData.year;
             const month = calendarData.month;
 
+            const region = calendarData.region || '';
             const avgTemp = Math.round((calendarData.avgMinTemp + calendarData.avgMaxTemp) / 2);
             document.getElementById('avgTemp').textContent = `${avgTemp}°`;
             document.getElementById('minMaxTemp').textContent = `${calendarData.monthMinTemp}°/${calendarData.monthMaxTemp}°`;
@@ -352,6 +395,8 @@
                         }
                         activeDayCell = dayCell;
                         dayCell.classList.add('is-active');
+
+                        handleDaySelection(dayData, { region, year, month });
                     });
 
                     daysGrid.appendChild(dayCell);
