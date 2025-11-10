@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>경보·주의보 달력</title>
+    <link rel="stylesheet" href="../assets/css/calendar.css">
+</head>
+<body>
+    <!-- 상단 네비게이션 바 -->
+    <div class="top-nav">
+        <div class="nav-left">
+            <button class="home-btn" aria-label="홈으로 이동">🏠</button>
+        </div>
+        <div class="nav-right">
+            <button class="nav-tab active" data-tab="alerts">경보특보</button>
+            <button class="nav-tab" data-tab="temperature">기온</button>
+            <button class="nav-tab" data-tab="precipitation">강수량</button>
+        </div>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="main-content">
+        <!-- 달력 영역 -->
+        <div class="calendar-container">
+            <div class="secondary-nav">
+                <div class="calendar-controls">
+                    <span class="year-display">2024년</span>
+                    <button class="nav-arrow" type="button" aria-label="이전 달" onclick="changeMonth(-1)">‹</button>
+                    <span class="month-display" id="currentMonthDisplay">9월</span>
+                    <button class="nav-arrow" type="button" aria-label="다음 달" onclick="changeMonth(1)">›</button>
+                </div>
+            </div>
+            <div class="calendar-content calendar-content--single">
+                <div class="calendar-main">
+                    <div class="day-headers" id="dayHeaders"></div>
+                    <div class="days-grid" id="daysGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 서버에서 JSON을 주입할 수 있는 영역 -->
+    <!--
+    <script id="embeddedAlertCalendarData" type="application/json">
+        { ... }
+    </script>
+    -->
+
+    <script>
+        const FIXED_YEAR = 2024;
+
+        const WEATHER_ICON_MAP = {
+            '맑음': './icons/clear.png',
+            '구름': './icons/partly_cloudy.png',
+            '흐림': './icons/mostly_cloudy.png',
+            '흐린': './icons/overcast.png',
+            '비': './icons/rain.png',
+            '눈': './icons/snow.png'
+        };
+
+        const ALERT_GROUP_MAP = {
+            '대설주의보': '대설',
+            '대설경보': '대설',
+            '한파주의보': '한파',
+            '한파경보': '한파',
+            '강풍주의보': '강풍',
+            '강풍경보': '강풍',
+            '풍랑주의보': '강풍',
+            '풍랑경보': '강풍',
+            '건조주의보': '건조',
+            '건조경보': '건조',
+            '호우주의보': '호우',
+            '호우경보': '호우',
+            '폭염주의보': '폭염',
+            '폭염경보': '폭염',
+            '폭풍해일주의보': '폭풍해일',
+            '폭풍해일경보': '폭풍해일',
+            '태풍주의보': '폭풍해일',
+            '태풍경보': '폭풍해일'
+        };
+
+        const ALERT_ICON_MAP = {
+            '대설': './icons/대설.png',
+            '한파': './icons/한파.png',
+            '강풍': './icons/강풍.png',
+            '건조': './icons/건조.png',
+            '호우': './icons/호우.png',
+            '폭염': './icons/폭염.png',
+            '폭풍해일': './icons/폭풍해일.png'
+        };
+
+        let currentDate = new Date(FIXED_YEAR, new Date().getMonth(), 1);
+        let calendarData = null;
+        let currentTab = 'alerts';
+        let activeDayCell = null;
+
+        const serverCalendarData = (() => {
+            const scriptEl = document.getElementById('embeddedAlertCalendarData');
+            if (scriptEl) {
+                try {
+                    return JSON.parse(scriptEl.textContent);
+                } catch (error) {
+                    console.warn('임베디드 경보 캘린더 데이터를 파싱하지 못했습니다.', error);
+                }
+            }
+            if (window.__ALERT_CALENDAR_DATA__) {
+                return window.__ALERT_CALENDAR_DATA__;
+            }
+            return null;
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCalendarData();
+            setupTabHandlers();
+        });
+
+        function setupTabHandlers() {
+            const tabs = document.querySelectorAll('.nav-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function () {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    currentTab = this.dataset.tab;
+                });
+            });
+        }
+
+        function changeMonth(direction) {
+            const currentMonth = currentDate.getMonth();
+            let newMonth = currentMonth + direction;
+
+            if (newMonth < 0) {
+                newMonth = 11;
+            } else if (newMonth > 11) {
+                newMonth = 0;
+            }
+
+            currentDate = new Date(FIXED_YEAR, newMonth, 1);
+            loadCalendarData();
+        }
+
+        function updateMonthDisplay() {
+            const month = currentDate.getMonth() + 1;
+            document.getElementById('currentMonthDisplay').textContent = `${month}월`;
+        }
+
+        function loadCalendarData() {
+            const year = FIXED_YEAR;
+            const month = currentDate.getMonth() + 1;
+
+            const serverData = resolveServerCalendarData(year, month);
+            if (serverData) {
+                calendarData = normalizeCalendarData(serverData);
+            } else {
+                calendarData = generateSampleData(year, month);
+            }
+
+            renderCalendar();
+        }
+
+        function generateSampleData(year, month) {
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const days = [];
+            const holidays = [13, 14, 15];
+            const weatherTypes = ['맑음', '구름', '흐림', '흐린', '비', '눈'];
+            const alertTypes = Object.keys(ALERT_GROUP_MAP);
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                let alertType = null;
+                if (Math.random() < 0.2) {
+                    alertType = alertTypes[Math.floor(Math.random() * alertTypes.length)];
+                }
+
+                days.push({
+                    day,
+                    isHoliday: holidays.includes(day),
+                    weather: weatherTypes[Math.floor(Math.random() * weatherTypes.length)],
+                    alertType
+                });
+            }
+
+            return {
+                region: '서울',
+                year,
+                month,
+                days
+            };
+        }
+
+        function normalizeCalendarData(data) {
+            const clone = cloneData(data);
+            clone.days = Array.isArray(clone.days)
+                ? clone.days.map(day => (day ? { ...day } : null))
+                : [];
+            return clone;
+        }
+
+        function cloneData(data) {
+            return typeof structuredClone === 'function'
+                ? structuredClone(data)
+                : JSON.parse(JSON.stringify(data));
+        }
+
+        function resolveServerCalendarData(year, month) {
+            if (!serverCalendarData) return null;
+            const dataSource = Array.isArray(serverCalendarData) ? serverCalendarData : [serverCalendarData];
+            const found = dataSource.find(item => {
+                if (!item || typeof item !== 'object') return false;
+                const yearMatches = !item.year || item.year === year;
+                const monthMatches = !item.month || item.month === month;
+                return yearMatches && monthMatches;
+            });
+            return found ? cloneData(found) : null;
+        }
+
+        function buildWeeks(days, year, month) {
+            const firstDay = new Date(year, month - 1, 1);
+            const startOffset = (firstDay.getDay() + 6) % 7;
+            const weeks = [];
+            let currentWeek = [];
+
+            for (let i = 0; i < startOffset; i++) {
+                currentWeek.push(null);
+            }
+
+            days.forEach(day => {
+                currentWeek.push(day);
+                if (currentWeek.length === 7) {
+                    weeks.push(currentWeek);
+                    currentWeek = [];
+                }
+            });
+
+            if (currentWeek.length > 0) {
+                while (currentWeek.length < 7) {
+                    currentWeek.push(null);
+                }
+                weeks.push(currentWeek);
+            }
+
+            return weeks;
+        }
+
+        function formatDateToISO(year, month, day) {
+            const normalizedMonth = String(month).padStart(2, '0');
+            const normalizedDay = String(day).padStart(2, '0');
+            return `${year}-${normalizedMonth}-${normalizedDay}`;
+        }
+
+        async function resolveDayInfoLink(region, year, month, day) {
+            const dateParam = formatDateToISO(year, month, day);
+            const query = new URLSearchParams({
+                region,
+                date: dateParam
+            });
+
+            try {
+                const response = await fetch(`/api/day-info-link?${query.toString()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API 응답 오류: ${response.status}`);
+                }
+
+                const payload = await response.json();
+                if (payload && typeof payload.url === 'string' && payload.url.length > 0) {
+                    return payload.url;
+                }
+            } catch (error) {
+                console.warn('day-info 링크 API 호출 실패, 폴백 URL을 사용합니다.', error);
+            }
+
+            return `/pages/day-info.html?${query.toString()}`;
+        }
+
+        async function handleDaySelection(dayData, context) {
+            const { region, year, month } = context;
+            const targetUrl = await resolveDayInfoLink(region || '', year, month, dayData.day);
+            window.location.href = targetUrl;
+        }
+
+        function renderCalendar() {
+            if (!calendarData) return;
+
+            const year = calendarData.year;
+            const month = calendarData.month;
+            const region = calendarData.region || '';
+
+            updateMonthDisplay();
+
+            const dayHeadersContainer = document.getElementById('dayHeaders');
+            const daysGrid = document.getElementById('daysGrid');
+
+            dayHeadersContainer.innerHTML = '';
+            daysGrid.innerHTML = '';
+
+            ['월', '화', '수', '목', '금', '토', '일'].forEach(day => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'day-header';
+                headerCell.textContent = day;
+                dayHeadersContainer.appendChild(headerCell);
+            });
+
+            const weeks = buildWeeks(calendarData.days, year, month);
+
+            weeks.forEach(week => {
+                week.forEach(dayData => {
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'day-cell';
+
+                    if (!dayData) {
+                        dayCell.classList.add('empty');
+                        daysGrid.appendChild(dayCell);
+                        return;
+                    }
+
+                    dayCell.classList.add('clickable');
+
+                    if (dayData.isHoliday) {
+                        dayCell.classList.add('holiday');
+                    }
+
+                    const alertGroup = dayData.alertType ? ALERT_GROUP_MAP[dayData.alertType] : null;
+                    const iconSrc = alertGroup
+                        ? ALERT_ICON_MAP[alertGroup] || WEATHER_ICON_MAP['흐림']
+                        : WEATHER_ICON_MAP[dayData.weather] || WEATHER_ICON_MAP['맑음'];
+                    const iconAlt = alertGroup ? `${dayData.alertType}` : (dayData.weather || '날씨');
+
+                    if (alertGroup) {
+                        dayCell.classList.add('alert-active');
+                    }
+
+                    dayCell.innerHTML = `
+                        <div class="day-number ${dayData.isHoliday ? 'holiday-text' : ''}">${dayData.day}</div>
+                        <div class="weather-icon">
+                            <img src="${iconSrc}" alt="${iconAlt}" class="weather-image">
+                        </div>
+                        <div class="temp-text">
+                            <span>${alertGroup ? alertGroup : (dayData.weather ?? '--')}</span>
+                        </div>
+                    `;
+
+                    dayCell.addEventListener('click', () => {
+                        if (activeDayCell && activeDayCell !== dayCell) {
+                            activeDayCell.classList.remove('is-active');
+                        }
+                        activeDayCell = dayCell;
+                        dayCell.classList.add('is-active');
+
+                        handleDaySelection(dayData, { region, year, month });
+                    });
+
+                    daysGrid.appendChild(dayCell);
+                });
+            });
+
+            if (!daysGrid.querySelector('.day-cell.is-active')) {
+                const firstClickable = daysGrid.querySelector('.day-cell.clickable');
+                if (firstClickable) {
+                    firstClickable.classList.add('is-active');
+                    activeDayCell = firstClickable;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
+

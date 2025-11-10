@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>강수량 달력</title>
+    <link rel="stylesheet" href="../assets/css/calendar.css">
+</head>
+<body>
+    <!-- 상단 네비게이션 바 -->
+    <div class="top-nav">
+        <div class="nav-left">
+            <button class="home-btn" aria-label="홈으로 이동">🏠</button>
+        </div>
+        <div class="nav-right">
+            <button class="nav-tab active" data-tab="precipitation">강수량</button>
+            <button class="nav-tab" data-tab="temperature">기온</button>
+            <button class="nav-tab" data-tab="alerts">경보특보</button>
+        </div>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="main-content">
+        <!-- 왼쪽 통계 패널 -->
+        <div class="stats-panel">
+            <div class="stat-section">
+                <div class="stat-label">월평균 강수량</div>
+                <div class="stat-value" id="avgRainfall">-- mm</div>
+            </div>
+        </div>
+
+        <!-- 달력 영역 -->
+        <div class="calendar-container">
+            <div class="secondary-nav">
+                <div class="calendar-controls">
+                    <span class="year-display">2024년</span>
+                    <button class="nav-arrow" type="button" aria-label="이전 달" onclick="changeMonth(-1)">‹</button>
+                    <span class="month-display" id="currentMonthDisplay">9월</span>
+                    <button class="nav-arrow" type="button" aria-label="다음 달" onclick="changeMonth(1)">›</button>
+                </div>
+            </div>
+            <div class="calendar-content">
+                <div class="week-averages" id="weekAverages"></div>
+                <div class="calendar-main">
+                    <div class="day-headers" id="dayHeaders"></div>
+                    <div class="days-grid" id="daysGrid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 서버에서 JSON을 주입할 수 있는 영역 -->
+    <!--
+    <script id="embeddedRainCalendarData" type="application/json">
+        { ... }
+    </script>
+    -->
+
+    <script>
+        const FIXED_YEAR = 2024;
+
+        const WEATHER_ICON_MAP = {
+            '맑음': './icons/clear.png',
+            '구름': './icons/partly_cloudy.png',
+            '흐림': './icons/mostly_cloudy.png',
+            '흐린': './icons/overcast.png',
+            '비': './icons/rain.png',
+            '눈': './icons/snow.png'
+        };
+
+        let currentDate = new Date(FIXED_YEAR, new Date().getMonth(), 1);
+        let calendarData = null;
+        let currentTab = 'precipitation';
+        let activeDayCell = null;
+
+        const serverCalendarData = (() => {
+            const scriptEl = document.getElementById('embeddedRainCalendarData');
+            if (scriptEl) {
+                try {
+                    return JSON.parse(scriptEl.textContent);
+                } catch (error) {
+                    console.warn('임베디드 강수량 캘린더 데이터를 파싱하지 못했습니다.', error);
+                }
+            }
+            if (window.__RAIN_CALENDAR_DATA__) {
+                return window.__RAIN_CALENDAR_DATA__;
+            }
+            return null;
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCalendarData();
+            setupTabHandlers();
+            window.addEventListener('resize', debounce(syncWeekRowHeights, 100));
+        });
+
+        function debounce(fn, delay = 150) {
+            let timer = null;
+            return function (...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        function setupTabHandlers() {
+            const tabs = document.querySelectorAll('.nav-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function () {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    currentTab = this.dataset.tab;
+                });
+            });
+        }
+
+        function changeMonth(direction) {
+            const currentMonth = currentDate.getMonth();
+            let newMonth = currentMonth + direction;
+
+            if (newMonth < 0) {
+                newMonth = 11;
+            } else if (newMonth > 11) {
+                newMonth = 0;
+            }
+
+            currentDate = new Date(FIXED_YEAR, newMonth, 1);
+            loadCalendarData();
+        }
+
+        function updateMonthDisplay() {
+            const month = currentDate.getMonth() + 1;
+            document.getElementById('currentMonthDisplay').textContent = `${month}월`;
+        }
+
+        function loadCalendarData() {
+            const year = FIXED_YEAR;
+            const month = currentDate.getMonth() + 1;
+
+            const serverData = resolveServerCalendarData(year, month);
+            if (serverData) {
+                calendarData = normalizeCalendarData(serverData);
+            } else {
+                calendarData = generateSampleData(year, month);
+            }
+
+            renderCalendar();
+        }
+
+        function generateSampleData(year, month) {
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const days = [];
+            const holidays = [13, 14, 15];
+
+            const weatherTypes = ['맑음', '구름', '흐림', '흐린', '비', '눈'];
+            let totalRain = 0;
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const rainfall = Number((Math.random() * 20).toFixed(1));
+                totalRain += rainfall;
+
+                days.push({
+                    day,
+                    isHoliday: holidays.includes(day),
+                    rainfall,
+                    weather: weatherTypes[Math.floor(Math.random() * weatherTypes.length)]
+                });
+            }
+
+            return {
+                region: '서울',
+                year,
+                month,
+                avgRainfall: Number((totalRain / daysInMonth).toFixed(1)),
+                weeklyAverages: [],
+                days
+            };
+        }
+
+        function normalizeCalendarData(data) {
+            const clone = cloneData(data);
+            clone.weeklyAverages = Array.isArray(clone.weeklyAverages) ? clone.weeklyAverages : [];
+            clone.days = Array.isArray(clone.days)
+                ? clone.days.map(day => (day ? { ...day } : null))
+                : [];
+            return clone;
+        }
+
+        function cloneData(data) {
+            return typeof structuredClone === 'function'
+                ? structuredClone(data)
+                : JSON.parse(JSON.stringify(data));
+        }
+
+        function resolveServerCalendarData(year, month) {
+            if (!serverCalendarData) return null;
+            const dataSource = Array.isArray(serverCalendarData) ? serverCalendarData : [serverCalendarData];
+            const found = dataSource.find(item => {
+                if (!item || typeof item !== 'object') return false;
+                const yearMatches = !item.year || item.year === year;
+                const monthMatches = !item.month || item.month === month;
+                return yearMatches && monthMatches;
+            });
+            return found ? cloneData(found) : null;
+        }
+
+        function buildWeeks(days, year, month) {
+            const firstDay = new Date(year, month - 1, 1);
+            const startOffset = (firstDay.getDay() + 6) % 7;
+            const weeks = [];
+            let currentWeek = [];
+
+            for (let i = 0; i < startOffset; i++) {
+                currentWeek.push(null);
+            }
+
+            days.forEach(day => {
+                currentWeek.push(day);
+                if (currentWeek.length === 7) {
+                    weeks.push(currentWeek);
+                    currentWeek = [];
+                }
+            });
+
+            if (currentWeek.length > 0) {
+                while (currentWeek.length < 7) {
+                    currentWeek.push(null);
+                }
+                weeks.push(currentWeek);
+            }
+
+            return weeks;
+        }
+
+        function calculateWeeklyAverages(weeks) {
+            return weeks.map(week => {
+                const validDays = week.filter(Boolean);
+                if (!validDays.length) {
+                    return '-';
+                }
+
+                const avgRain = validDays.reduce((sum, day) => sum + (day.rainfall ?? 0), 0) / validDays.length;
+                return `${avgRain.toFixed(1)} mm`;
+            });
+        }
+
+        function syncWeekRowHeights() {
+            const weekItems = Array.from(document.querySelectorAll('.week-average-item'));
+            const dayCells = Array.from(document.querySelectorAll('.days-grid .day-cell'));
+            if (!weekItems.length || !dayCells.length) return;
+
+            weekItems.forEach(item => {
+                item.style.height = 'auto';
+            });
+
+            const rows = Math.ceil(dayCells.length / 7);
+            for (let i = 0; i < rows && i < weekItems.length; i++) {
+                const rowCells = dayCells.slice(i * 7, (i + 1) * 7);
+                const rowHeight = Math.max(...rowCells.map(cell => cell.getBoundingClientRect().height));
+                weekItems[i].style.height = `${rowHeight}px`;
+            }
+        }
+
+        function formatDateToISO(year, month, day) {
+            const normalizedMonth = String(month).padStart(2, '0');
+            const normalizedDay = String(day).padStart(2, '0');
+            return `${year}-${normalizedMonth}-${normalizedDay}`;
+        }
+
+        async function resolveDayInfoLink(region, year, month, day) {
+            const dateParam = formatDateToISO(year, month, day);
+            const query = new URLSearchParams({
+                region,
+                date: dateParam
+            });
+
+            try {
+                const response = await fetch(`/api/day-info-link?${query.toString()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API 응답 오류: ${response.status}`);
+                }
+
+                const payload = await response.json();
+                if (payload && typeof payload.url === 'string' && payload.url.length > 0) {
+                    return payload.url;
+                }
+            } catch (error) {
+                console.warn('day-info 링크 API 호출 실패, 폴백 URL을 사용합니다.', error);
+            }
+
+            return `/pages/day-info.html?${query.toString()}`;
+        }
+
+        async function handleDaySelection(dayData, context) {
+            const { region, year, month } = context;
+            const targetUrl = await resolveDayInfoLink(region || '', year, month, dayData.day);
+            window.location.href = targetUrl;
+        }
+
+        function renderCalendar() {
+            if (!calendarData) return;
+
+            const year = calendarData.year;
+            const month = calendarData.month;
+
+            const region = calendarData.region || '';
+            const avgRainfall = calendarData.avgRainfall != null ? calendarData.avgRainfall.toFixed(1) : '--';
+
+            document.getElementById('avgRainfall').textContent = `${avgRainfall} mm`;
+
+            updateMonthDisplay();
+
+            const weekAveragesContainer = document.getElementById('weekAverages');
+            const dayHeadersContainer = document.getElementById('dayHeaders');
+            const daysGrid = document.getElementById('daysGrid');
+
+            weekAveragesContainer.innerHTML = '';
+            dayHeadersContainer.innerHTML = '';
+            daysGrid.innerHTML = '';
+
+            const averagingTitle = document.createElement('div');
+            averagingTitle.className = 'week-averages-title';
+            averagingTitle.textContent = '주 평균 강수량';
+            weekAveragesContainer.appendChild(averagingTitle);
+
+            ['월', '화', '수', '목', '금', '토', '일'].forEach(day => {
+                const headerCell = document.createElement('div');
+                headerCell.className = 'day-header';
+                headerCell.textContent = day;
+                dayHeadersContainer.appendChild(headerCell);
+            });
+
+            const weeks = buildWeeks(calendarData.days, year, month);
+            const weeklyAverages =
+                calendarData.weeklyAverages && calendarData.weeklyAverages.length
+                    ? calendarData.weeklyAverages
+                    : calculateWeeklyAverages(weeks);
+
+            weeks.forEach((week, index) => {
+                const avgItem = document.createElement('div');
+                avgItem.className = 'week-average-item';
+                avgItem.textContent = weeklyAverages[index] ?? '-';
+                weekAveragesContainer.appendChild(avgItem);
+
+                week.forEach(dayData => {
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'day-cell';
+
+                    if (!dayData) {
+                        dayCell.classList.add('empty');
+                        daysGrid.appendChild(dayCell);
+                        return;
+                    }
+
+                    dayCell.classList.add('clickable');
+
+                    if (dayData.isHoliday) {
+                        dayCell.classList.add('holiday');
+                    }
+
+                    const weatherImage = WEATHER_ICON_MAP[dayData.weather] || WEATHER_ICON_MAP['맑음'];
+
+                    dayCell.innerHTML = `
+                        <div class="day-number ${dayData.isHoliday ? 'holiday-text' : ''}">${dayData.day}</div>
+                        <div class="weather-icon">
+                            <img src="${weatherImage}" alt="${dayData.weather ?? '날씨'}" class="weather-image">
+                        </div>
+                        <div class="temp-text">
+                            <span>${dayData.rainfall != null ? dayData.rainfall.toString() : '--'} mm</span>
+                        </div>
+                    `;
+
+                    dayCell.addEventListener('click', () => {
+                        if (activeDayCell && activeDayCell !== dayCell) {
+                            activeDayCell.classList.remove('is-active');
+                        }
+                        activeDayCell = dayCell;
+                        dayCell.classList.add('is-active');
+
+                        handleDaySelection(dayData, { region, year, month });
+                    });
+
+                    daysGrid.appendChild(dayCell);
+                });
+            });
+
+            if (!daysGrid.querySelector('.day-cell.is-active')) {
+                const firstClickable = daysGrid.querySelector('.day-cell.clickable');
+                if (firstClickable) {
+                    firstClickable.classList.add('is-active');
+                    activeDayCell = firstClickable;
+                }
+            }
+
+            syncWeekRowHeights();
+        }
+    </script>
+</body>
+</html>
+

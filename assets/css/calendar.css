@@ -287,6 +287,23 @@ body {
     width: 100%;
 }
 
+.calendar-content--single {
+    display: block;
+}
+
+.day-cell.alert-active {
+    background: linear-gradient(180deg, rgba(255, 252, 242, 0.7) 0%, rgba(255, 252, 242, 0.9) 100%);
+    border: 1px solid rgba(255, 252, 242, 0.4);
+}
+
+.day-cell.alert-active .day-number {
+    color: #b45309;
+}
+
+.day-cell.alert-active .temp-text {
+    color: #92400e;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 1024px) {
     .main-content {
