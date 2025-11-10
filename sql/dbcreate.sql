@@ -36,7 +36,7 @@ CREATE TABLE DateDim (
 
 -- 1-3. WeatherStatusDim (기상 현상 차원) 테이블
 CREATE TABLE WeatherStatusDim (
-    status_code CHAR(3) PRIMARY KEY COMMENT '기상 현상 코드 (PK, 예: 091, 084)',
+    status_code CHAR(2) PRIMARY KEY COMMENT '기상 현상 코드 (PK, 예: 91, 84)',
     status_name VARCHAR(50) NOT NULL COMMENT '기상 현상 (예: 맑음, 비, 흐림)'
 ) ENGINE=InnoDB;
 
