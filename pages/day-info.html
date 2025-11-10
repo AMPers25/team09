@@ -10,10 +10,6 @@
     <header class="header-bar">
         <div class="header-left">
             <button class="back-button" aria-label="이전 화면으로">←</button>
-            <div class="location-select" role="button">
-                <span id="locationName">서울특별시</span>
-                <span>▼</span>
-            </div>
         </div>
         <div class="tab-group">
             <button class="tab-button is-active">기온</button>
@@ -71,7 +67,6 @@
         };
 
         const detailElements = {
-            locationName: document.getElementById('locationName'),
             summaryIcon: document.getElementById('summaryIcon'),
             summaryDate: document.getElementById('summaryDate'),
             summaryTemp: document.getElementById('summaryTemp'),
@@ -120,7 +115,6 @@
         function applyDetailData(data) {
             if (!data) return;
 
-            detailElements.locationName.textContent = data.location || '정보 없음';
             detailElements.summaryDate.textContent = data.dateLabel || '--';
             detailElements.summaryTemp.textContent = data.temperatureRange || '--';
             detailElements.summaryCondition.textContent = data.condition || '--';
