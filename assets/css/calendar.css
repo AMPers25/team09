@@ -35,6 +35,42 @@ body {
     padding: 5px;
 }
 
+.region-selector {
+    padding: 6px 40px;
+    border-radius: 6px;
+    border: 1px solid #cbd5f5;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.region-selector:focus {
+    outline: none;
+    border-color: #49a4d8b9;
+    box-shadow: 0 0 0 2px rgba(90, 103, 216, 0.3);
+}
+
+.region-go-btn {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #49a4d8b9;
+    color: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.region-go-btn:hover {
+    background: #49a4d8b9;
+    transform: translateY(-1px);
+}
+
+.region-go-btn:active {
+    transform: translateY(0);
+}
+
 .nav-right {
     display: flex;
     gap: 12px;

@@ -11,6 +11,8 @@
     <div class="top-nav">
         <div class="nav-left">
             <button class="home-btn" aria-label="홈으로 이동">🏠</button>
+            <select id="regionSelector" class="region-selector" aria-label="지역 선택"></select>
+            <button id="regionGoBtn" class="region-go-btn" type="button">이동</button>
         </div>
         <div class="nav-right">
             <button class="nav-tab active" data-tab="temperature">기온</button>
@@ -71,6 +73,29 @@
             '눈': './icons/snow.png'
         };
 
+        const REGION_OPTIONS = [
+            { code: '108', name: '서울' },
+            { code: '159', name: '부산' },
+            { code: '112', name: '인천' },
+            { code: '143', name: '대구' },
+            { code: '156', name: '광주' },
+            { code: '133', name: '대전' },
+            { code: '152', name: '울산' },
+            { code: '239', name: '세종' },
+            { code: '184', name: '제주' },
+            { code: '104', name: '북강릉' },
+            { code: '090', name: '속초' },
+            { code: '093', name: '북춘천' },
+            { code: '168', name: '여수' },
+            { code: '146', name: '전주' },
+            { code: '283', name: '경주' },
+            { code: '115', name: '울릉도' },
+            { code: '162', name: '통영' },
+            { code: '232', name: '천안' },
+            { code: '131', name: '청주' },
+            { code: '119', name: '수원' }
+        ];
+
         // URL 파라미터에서 region_code와 month 읽기
         const urlParams = new URLSearchParams(window.location.search);
         const regionCode = urlParams.get('region_code') || urlParams.get('region') || '';
@@ -108,6 +133,7 @@
                 loadCalendarData();
                 setupTabHandlers();
                 setupHomeButton();
+                setupRegionSelector();
                 window.addEventListener('resize', debounce(syncWeekRowHeights, 100));
             } catch (error) {
                 console.error('초기화 중 오류 발생:', error);
@@ -126,6 +152,31 @@
                     window.location.href = '/pages/index.html';
                 });
             }
+        }
+
+        function setupRegionSelector() {
+            const selector = document.getElementById('regionSelector');
+            const goBtn = document.getElementById('regionGoBtn');
+            if (!selector || !goBtn) return;
+
+            selector.innerHTML = REGION_OPTIONS
+                .map(option => `<option value="${option.code}">${option.name}</option>`)
+                .join('');
+
+            if (regionCode) {
+                selector.value = regionCode;
+            }
+
+            goBtn.addEventListener('click', () => {
+                const selectedCode = selector.value;
+                if (!selectedCode) return;
+
+                const month = currentDate.getMonth() + 1;
+                const params = new URLSearchParams();
+                params.set('region_code', selectedCode);
+                params.set('month', String(month).padStart(2, '0'));
+                window.location.href = `temp-calendar.html?${params.toString()}`;
+            });
         }
 
         function debounce(fn, delay = 150) {
