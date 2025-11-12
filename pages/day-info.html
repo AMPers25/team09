@@ -11,11 +11,7 @@
         <div class="header-left">
             <button class="back-button" aria-label="이전 화면으로">←</button>
         </div>
-        <div class="tab-group">
-            <button class="tab-button is-active">기온</button>
-            <button class="tab-button">강수량</button>
-            <button class="tab-button">경보특보</button>
-        </div>
+
     </header>
 
     <main class="page-wrapper">
@@ -30,19 +26,19 @@
 
         <section class="card-grid">
             <article class="info-card" id="temperatureCard">
-                <h2>Temperature</h2>
+                <h2>기온</h2>
                 <div class="info-list" id="temperatureList"></div>
             </article>
             <article class="info-card" id="rainCard">
-                <h2>Rain</h2>
+                <h2>강수량</h2>
                 <div class="info-list" id="rainList"></div>
             </article>
             <article class="info-card" id="alertCard">
-                <h2>Weather Alert</h2>
+                <h2>경보 / 특보</h2>
                 <div class="info-list" id="alertList"></div>
             </article>
             <article class="info-card" id="airQualityCard">
-                <h2 id="airQualityTitle">Air Quality</h2>
+                <h2 id="airQualityTitle">미세먼지 농도 (PM 10)</h2>
                 <div class="air-quality-score" id="airQualityValue">--</div>
                 <div class="info-list" id="airQualityMeta"></div>
             </article>
@@ -66,6 +62,27 @@
             '눈': './icons/snow.png'
         };
 
+        // URL 파라미터에서 날짜와 지역 코드 읽기
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date') || '';
+        const regionCode = urlParams.get('region_code') || urlParams.get('region') || '';
+
+        // 날짜를 한국어 형식으로 변환 (YYYY-MM-DD -> YYYY년 M월 D일)
+        function formatDateToKorean(dateString) {
+            if (!dateString) return '--';
+            try {
+                const date = new Date(dateString + 'T00:00:00');
+                if (isNaN(date.getTime())) return '--';
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                return `${year}년 ${month}월 ${day}일`;
+            } catch (error) {
+                console.warn('날짜 파싱 실패:', error);
+                return '--';
+            }
+        }
+
         const detailElements = {
             summaryIcon: document.getElementById('summaryIcon'),
             summaryDate: document.getElementById('summaryDate'),
@@ -83,18 +100,59 @@
             airQualityMeta: document.getElementById('airQualityMeta')
         };
 
-        function readServerData() {
+        async function loadDayInfoData() {
+            // 먼저 서버 데이터 확인
             const scriptEl = document.getElementById('dayInfoData');
             if (scriptEl) {
                 try {
-                    return JSON.parse(scriptEl.textContent);
+                    const data = JSON.parse(scriptEl.textContent);
+                    // 서버 데이터에 날짜가 없으면 URL 파라미터의 날짜 사용
+                    if (data && !data.dateLabel && dateParam) {
+                        data.dateLabel = formatDateToKorean(dateParam);
+                    }
+                    return data;
                 } catch (error) {
                     console.warn('dayInfoData 파싱 실패', error);
                 }
             }
             if (window.__DAY_INFO__) {
-                return window.__DAY_INFO__;
+                const data = window.__DAY_INFO__;
+                if (data && !data.dateLabel && dateParam) {
+                    data.dateLabel = formatDateToKorean(dateParam);
+                }
+                return data;
             }
+
+            // API 호출 시도
+            if (regionCode && dateParam) {
+                try {
+                    const params = new URLSearchParams({
+                        region_code: regionCode,
+                        date: dateParam
+                    });
+                    
+                    const response = await fetch(`/api/day-info?${params.toString()}`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data) {
+                            // API 응답에 날짜가 없으면 URL 파라미터의 날짜 사용
+                            if (!data.dateLabel && dateParam) {
+                                data.dateLabel = formatDateToKorean(dateParam);
+                            }
+                            return data;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('API 호출 실패, 샘플 데이터를 사용합니다.', error);
+                }
+            }
+
             return null;
         }
 
@@ -115,7 +173,9 @@
         function applyDetailData(data) {
             if (!data) return;
 
-            detailElements.summaryDate.textContent = data.dateLabel || '--';
+            // 날짜는 서버 데이터가 있으면 사용하고, 없으면 URL 파라미터의 날짜 사용
+            const displayDate = data.dateLabel || formatDateToKorean(dateParam);
+            detailElements.summaryDate.textContent = displayDate;
             detailElements.summaryTemp.textContent = data.temperatureRange || '--';
             detailElements.summaryCondition.textContent = data.condition || '--';
 
@@ -145,9 +205,12 @@
         }
 
         function createSampleData() {
+            // URL 파라미터의 날짜를 사용하거나, 없으면 현재 날짜 사용
+            const sampleDate = dateParam ? formatDateToKorean(dateParam) : formatDateToKorean(new Date().toISOString().split('T')[0]);
+            
             return {
                 location: '서울특별시',
-                dateLabel: '2023년 9월 17일',
+                dateLabel: sampleDate,
                 temperatureRange: '18° / 25°',
                 condition: '맑음',
                 icon: WEATHER_ICON_MAP['맑음'],
@@ -165,16 +228,16 @@
                 ],
                 weatherAlert: [
                         {
-                                label: '특보 분류',
+                                label: '분류',
                                 value: '폭염경보'
                         },
                         {
-                                label: '특보 시간',
+                                label: '발효 시각',
                                 value: '12:00'
                         }
                 ],
                 airQuality: {
-                    title: 'Air Quality - pm 10',
+                    title: '미세먼지 농도 (PM 10)',
                     value: '22.0',
                     meta: [
                         { label: '등급', value: '보통' },
@@ -184,10 +247,20 @@
             };
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const dayInfo = readServerData() || createSampleData();
+        document.addEventListener('DOMContentLoaded', async () => {
+            const dayInfo = await loadDayInfoData() || createSampleData();
             applyDetailData(dayInfo);
+            setupBackButton();
         });
+
+        function setupBackButton() {
+            const backBtn = document.querySelector('.back-button');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    window.history.back();
+                });
+            }
+        }
     </script>
 </body>
 </html>

@@ -86,7 +86,7 @@ body {
 }
 
 .summary-date {
-    font-size: 1.1rem;
+    font-size: 1.5rem;
     color: #4b5563;
     font-weight: 600;
 }
@@ -98,14 +98,14 @@ body {
 }
 
 .summary-condition {
-    font-size: 1.05rem;
+    font-size: 1.2rem;
     font-weight: 500;
     color: #000000;
 }
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
 }
 
@@ -114,12 +114,13 @@ body {
     border-radius: 16px;
     padding: 22px 24px;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    margin: 5px 5px;
 }
 
 .info-card h2 {
-    font-size: 1.05rem;
+    font-size: 1.6rem;
     color: #1f2937;
-    margin-bottom: 16px;
+    margin-bottom: 25px;
 }
 
 .info-list {
@@ -131,7 +132,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.95rem;
+    font-size: 1.45rem;
     color: #4b5563;
 }
 
@@ -141,7 +142,7 @@ body {
 }
 
 .air-quality-score {
-    font-size: 2.25rem;
+    font-size: 1.9rem;
     font-weight: 600;
     color: #1f2937;
     margin-bottom: 14px;
@@ -167,5 +168,9 @@ body {
     .summary-icon {
         width: 72px;
         height: 72px;
+    }
+
+    .card-grid {
+        grid-template-columns: 1fr;
     }
 }

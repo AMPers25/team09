@@ -38,9 +38,9 @@
             <div class="secondary-nav">
                 <div class="calendar-controls">
                     <span class="year-display">2024년</span>
-                    <button class="nav-arrow" type="button" aria-label="이전 달" onclick="changeMonth(-1)">‹</button>
+                    <button id="prevMonthBtn" class="nav-arrow" type="button" aria-label="이전 달" onclick="changeMonth(-1)">‹</button>
                     <span class="month-display" id="currentMonthDisplay">9월</span>
-                    <button class="nav-arrow" type="button" aria-label="다음 달" onclick="changeMonth(1)">›</button>
+                    <button id="nextMonthBtn" class="nav-arrow" type="button" aria-label="다음 달" onclick="changeMonth(1)">›</button>
                 </div>
             </div>
             <div class="calendar-content">
@@ -71,7 +71,18 @@
             '눈': './icons/snow.png'
         };
 
-        let currentDate = new Date(FIXED_YEAR, new Date().getMonth(), 1);
+        // URL 파라미터에서 region_code와 month 읽기
+        const urlParams = new URLSearchParams(window.location.search);
+        const regionCode = urlParams.get('region_code') || urlParams.get('region') || '';
+        const monthParam = urlParams.get('month');
+        const initialMonth = monthParam ? parseInt(monthParam, 10) - 1 : new Date().getMonth();
+        
+        // region_code가 필수이므로 없으면 에러
+        if (!regionCode) {
+            throw new Error('잘못된 접근: region_code 파라미터가 필요합니다.');
+        }
+        
+        let currentDate = new Date(FIXED_YEAR, initialMonth, 1);
         let calendarData = null;
         let currentTab = 'temperature';
         let activeDayCell = null;
@@ -92,10 +103,30 @@
         })();
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadCalendarData();
-            setupTabHandlers();
-            window.addEventListener('resize', debounce(syncWeekRowHeights, 100));
+            try {
+                updateMonthDisplay(); // 초기 로드 시 버튼 상태 업데이트
+                loadCalendarData();
+                setupTabHandlers();
+                setupHomeButton();
+                window.addEventListener('resize', debounce(syncWeekRowHeights, 100));
+            } catch (error) {
+                console.error('초기화 중 오류 발생:', error);
+                document.body.innerHTML = `<div style="padding: 20px; text-align: center;">
+                    <h2>오류가 발생했습니다</h2>
+                    <p>${error.message}</p>
+                    <p>브라우저 콘솔을 확인하세요.</p>
+                </div>`;
+            }
         });
+
+        function setupHomeButton() {
+            const homeBtn = document.querySelector('.home-btn');
+            if (homeBtn) {
+                homeBtn.addEventListener('click', () => {
+                    window.location.href = '/pages/index.html';
+                });
+            }
+        }
 
         function debounce(fn, delay = 150) {
             let timer = null;
@@ -109,9 +140,32 @@
             const tabs = document.querySelectorAll('.nav-tab');
             tabs.forEach(tab => {
                 tab.addEventListener('click', function () {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    currentTab = this.dataset.tab;
+                    const targetTab = this.dataset.tab;
+                    
+                    // 현재 region_code와 month 유지하면서 해당 캘린더로 이동
+                    const month = currentDate.getMonth() + 1;
+                    const params = new URLSearchParams();
+                    params.set('region_code', regionCode);
+                    params.set('month', String(month).padStart(2, '0'));
+                    
+                    let targetPage = '';
+                    if (targetTab === 'temperature') {
+                        targetPage = 'temp-calendar.html';
+                    } else if (targetTab === 'precipitation') {
+                        targetPage = 'rain-calendar.html';
+                    } else if (targetTab === 'alerts') {
+                        targetPage = 'alert-calendar.html';
+                    }
+                    
+                    const currentPage = window.location.pathname.split('/').pop() || '';
+                    if (targetPage && targetPage !== currentPage) {
+                        window.location.href = `${targetPage}?${params.toString()}`;
+                    } else {
+                        // 같은 페이지면 탭만 변경
+                        tabs.forEach(t => t.classList.remove('active'));
+                        this.classList.add('active');
+                        currentTab = targetTab;
+                    }
                 });
             });
         }
@@ -120,25 +174,71 @@
             const currentMonth = currentDate.getMonth();
             let newMonth = currentMonth + direction;
 
-            if (newMonth < 0) {
-                newMonth = 11;
-            } else if (newMonth > 11) {
-                newMonth = 0;
+            // 1월에서 이전 달로 가거나 12월에서 다음 달로 가는 것을 방지
+            if (newMonth < 0 || newMonth > 11) {
+                return;
             }
 
             currentDate = new Date(FIXED_YEAR, newMonth, 1);
+            
+            // URL 업데이트
+            const month = newMonth + 1;
+            const params = new URLSearchParams();
+            params.set('region_code', regionCode);
+            params.set('month', String(month).padStart(2, '0'));
+            window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+            
             loadCalendarData();
+            updateMonthDisplay();
         }
 
         function updateMonthDisplay() {
             const month = currentDate.getMonth() + 1;
             document.getElementById('currentMonthDisplay').textContent = `${month}월`;
+            
+            // 월에 따라 버튼 표시/숨김
+            const prevBtn = document.getElementById('prevMonthBtn');
+            const nextBtn = document.getElementById('nextMonthBtn');
+            
+            if (prevBtn) {
+                prevBtn.style.display = month === 1 ? 'none' : 'block';
+            }
+            if (nextBtn) {
+                nextBtn.style.display = month === 12 ? 'none' : 'block';
+            }
         }
 
-        function loadCalendarData() {
+        async function loadCalendarData() {
             const year = FIXED_YEAR;
             const month = currentDate.getMonth() + 1;
 
+            // API 호출 시도
+            try {
+                const params = new URLSearchParams({
+                    region_code: regionCode,
+                    month: String(month).padStart(2, '0')
+                });
+                
+                const response = await fetch(`/api/temp-calendar?${params.toString()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data) {
+                        calendarData = normalizeCalendarData(data);
+                        renderCalendar();
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.warn('API 호출 실패, 폴백 데이터를 사용합니다.', error);
+            }
+
+            // 폴백: 서버 데이터 또는 샘플 데이터
             const serverData = resolveServerCalendarData(year, month);
             if (serverData) {
                 calendarData = normalizeCalendarData(serverData);
@@ -176,7 +276,8 @@
             }
 
             return {
-                region: '서울',
+                region: regionCode,
+                region_code: regionCode,
                 year,
                 month,
                 avgMinTemp: Math.round(totalMin / daysInMonth),
@@ -279,10 +380,10 @@
             return `${year}-${normalizedMonth}-${normalizedDay}`;
         }
 
-        async function resolveDayInfoLink(region, year, month, day) {
+        async function resolveDayInfoLink(regionCode, year, month, day) {
             const dateParam = formatDateToISO(year, month, day);
             const query = new URLSearchParams({
-                region,
+                region_code: regionCode,
                 date: dateParam
             });
 
@@ -310,8 +411,8 @@
         }
 
         async function handleDaySelection(dayData, context) {
-            const { region, year, month } = context;
-            const targetUrl = await resolveDayInfoLink(region || '', year, month, dayData.day);
+            const { region_code, year, month } = context;
+            const targetUrl = await resolveDayInfoLink(region_code || '', year, month, dayData.day);
             window.location.href = targetUrl;
         }
 
@@ -321,7 +422,7 @@
             const year = calendarData.year;
             const month = calendarData.month;
 
-            const region = calendarData.region || '';
+            const regionCodeForContext = calendarData.region_code || regionCode;
             const avgTemp = Math.round((calendarData.avgMinTemp + calendarData.avgMaxTemp) / 2);
             document.getElementById('avgTemp').textContent = `${avgTemp}°`;
             document.getElementById('minMaxTemp').textContent = `${calendarData.monthMinTemp}°/${calendarData.monthMaxTemp}°`;
@@ -396,7 +497,7 @@
                         activeDayCell = dayCell;
                         dayCell.classList.add('is-active');
 
-                        handleDaySelection(dayData, { region, year, month });
+                        handleDaySelection(dayData, { region_code: regionCodeForContext, year, month });
                     });
 
                     daysGrid.appendChild(dayCell);
