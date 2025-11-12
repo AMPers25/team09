@@ -18,6 +18,13 @@
         <section class="summary-block">
             <img id="summaryIcon" class="summary-icon" src="./icons/clear.png" alt="날씨 아이콘">
             <div class="summary-details">
+
+                
+
+
+                <!-- API 연결 이후 -->
+                <!-- 아래의 디폴트 값 없애기 -->
+
                 <div class="summary-date" id="summaryDate">2024년 9월 17일</div>
                 <div class="summary-temp" id="summaryTemp">18° / 25°</div>
                 <span class="summary-condition" id="summaryCondition">맑음</span>
@@ -101,59 +108,42 @@
         };
 
         async function loadDayInfoData() {
-            // 먼저 서버 데이터 확인
-            const scriptEl = document.getElementById('dayInfoData');
-            if (scriptEl) {
-                try {
-                    const data = JSON.parse(scriptEl.textContent);
-                    // 서버 데이터에 날짜가 없으면 URL 파라미터의 날짜 사용
-                    if (data && !data.dateLabel && dateParam) {
-                        data.dateLabel = formatDateToKorean(dateParam);
-                    }
-                    return data;
-                } catch (error) {
-                    console.warn('dayInfoData 파싱 실패', error);
-                }
+            if (!regionCode || !dateParam) {
+                throw new Error('region_code와 date 파라미터가 필요합니다.');
             }
-            if (window.__DAY_INFO__) {
-                const data = window.__DAY_INFO__;
-                if (data && !data.dateLabel && dateParam) {
+
+            try {
+                const params = new URLSearchParams({
+                    region_code: regionCode,
+                    date: dateParam
+                });
+                
+                const response = await fetch(`/api/day-info?${params.toString()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API 응답 오류: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (!data) {
+                    throw new Error('API에서 데이터를 받지 못했습니다.');
+                }
+
+                // API 응답에 날짜가 없으면 URL 파라미터의 날짜 사용
+                if (!data.dateLabel && dateParam) {
                     data.dateLabel = formatDateToKorean(dateParam);
                 }
+
                 return data;
+            } catch (error) {
+                console.error('API 호출 실패:', error);
+                throw error;
             }
-
-            // API 호출 시도
-            if (regionCode && dateParam) {
-                try {
-                    const params = new URLSearchParams({
-                        region_code: regionCode,
-                        date: dateParam
-                    });
-                    
-                    const response = await fetch(`/api/day-info?${params.toString()}`, {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data) {
-                            // API 응답에 날짜가 없으면 URL 파라미터의 날짜 사용
-                            if (!data.dateLabel && dateParam) {
-                                data.dateLabel = formatDateToKorean(dateParam);
-                            }
-                            return data;
-                        }
-                    }
-                } catch (error) {
-                    console.warn('API 호출 실패, 샘플 데이터를 사용합니다.', error);
-                }
-            }
-
-            return null;
         }
 
         function populateList(container, items = []) {
@@ -171,7 +161,9 @@
         }
 
         function applyDetailData(data) {
-            if (!data) return;
+            if (!data) {
+                throw new Error('데이터가 없습니다.');
+            }
 
             // 날짜는 서버 데이터가 있으면 사용하고, 없으면 URL 파라미터의 날짜 사용
             const displayDate = data.dateLabel || formatDateToKorean(dateParam);
@@ -204,53 +196,19 @@
             }
         }
 
-        function createSampleData() {
-            // URL 파라미터의 날짜를 사용하거나, 없으면 현재 날짜 사용
-            const sampleDate = dateParam ? formatDateToKorean(dateParam) : formatDateToKorean(new Date().toISOString().split('T')[0]);
-            
-            return {
-                location: '서울특별시',
-                dateLabel: sampleDate,
-                temperatureRange: '18° / 25°',
-                condition: '맑음',
-                icon: WEATHER_ICON_MAP['맑음'],
-                temperature: [
-                    { label: '평균기온', value: '21°' },
-                    { label: '최대기온', value: '25°' },
-                    { label: '최소기온', value: '18°' },
-                    { label: '일교차', value: '7°' }
-                ],
-                rain: [
-                    { label: '강수', value: '0.0mm' },
-                    { label: '습도', value: '45%' },
-                    { label: '바람', value: '2.1m/s' },
-                    { label: '운량', value: '2 oktas' }
-                ],
-                weatherAlert: [
-                        {
-                                label: '분류',
-                                value: '폭염경보'
-                        },
-                        {
-                                label: '발효 시각',
-                                value: '12:00'
-                        }
-                ],
-                airQuality: {
-                    title: '미세먼지 농도 (PM 10)',
-                    value: '22.0',
-                    meta: [
-                        { label: '등급', value: '보통' },
-                        { label: '단위', value: '㎍/m³' }
-                    ]
-                }
-            };
-        }
-
         document.addEventListener('DOMContentLoaded', async () => {
-            const dayInfo = await loadDayInfoData() || createSampleData();
-            applyDetailData(dayInfo);
-            setupBackButton();
+            try {
+                const dayInfo = await loadDayInfoData();
+                applyDetailData(dayInfo);
+                setupBackButton();
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+                document.body.innerHTML = `<div style="padding: 20px; text-align: center;">
+                    <h2>데이터를 불러올 수 없습니다</h2>
+                    <p>${error.message}</p>
+                    <p>브라우저 콘솔을 확인하세요.</p>
+                </div>`;
+            }
         });
 
         function setupBackButton() {
