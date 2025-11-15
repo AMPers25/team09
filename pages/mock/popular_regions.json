@@ -1,7 +1,10 @@
-[
-  {"name":"제주특별자치도","popular_count":412},
-  {"name":"부산광역시","popular_count":381},
-  {"name":"전라북도 전주","popular_count":290},
-  {"name":"경상북도 경주시","popular_count":274},
-  {"name":"대전광역시","popular_count":252}
-]
+{
+  "ok": true,
+  "data": [
+    { "region_code": "108", "popular_count": 42 },
+    { "region_code": "159", "popular_count": 28 },
+    { "region_code": "168", "popular_count": 21 },
+    { "region_code": "119", "popular_count": 19 },
+    { "region_code": "184", "popular_count": 17 }
+  ]
+}

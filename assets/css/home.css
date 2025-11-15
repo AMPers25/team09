@@ -25,24 +25,45 @@
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius:60px;
-  padding:16px;
+  padding:16px 32px;
 }
 
 .row{     /* 여러 입력 필드를 한 줄로 나열 */
   display:flex;
-  gap:25px;
   align-items:center;
+  justify-content:space-between;
+  column-gap:24px;
+  row-gap:12px;
   flex-wrap:wrap;
 }
-
-.field{     /* 각 입력박스(label + input) */
+/* 왼쪽 지역 선택 박스 폭 */
+.field-region{
+  flex:0 0 320px;             /* 대략 320px 정도 고정 폭 */
+  min-width:260px;
+  padding-left:35px;
+}
+/* 오른쪽 날짜 그룹 */
+.date-group{
+  display:flex;
+  align-items:center;
+  column-gap:18px;            /* 시작~종료 사이 간격 */
+  flex:0 0 auto;
+}
+/* 날짜 필드 폭 */
+.date-group .field{
+  flex:0 0 220px;
   min-width:220px;
-  flex:1;
+}
+
+.tilde{
+  flex:0 0 auto;
+  margin: 0 6px;
+  font-size:20px;
 }
 
 .field select,
 .field input{
-  height:61px;
+  height:50px;
   padding:8px 10px;
   border-radius:5px;
   border:1px solid var(--line);
@@ -67,26 +88,62 @@
 .card{
   background:var(--bg);
   border-radius:10px;
-  padding:16px;
+  padding:24px 20px;
+  display:flex;
+  flex-direction:column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-.card h3{ margin:6px 0 12px; }   /* 카드 안의 제목 위아래 간격 조정 */
+.card h3{ 
+  font-size: 22px;
+  font-weight:400;
+  margin:6px 0 6px; }   /* 카드 안의 제목 위아래 간격 조정 */
+.card .btn{
+  width:100%;
+  display:inline-flex;
+  justify-content:center;   /* 아이콘+텍스트 가운데 정렬 */
+  margin-top:12px;
+  background:var(--main);
+  border:0;
+  border-radius:60px;
+  padding:12px;
+  gap: 10px;
+  cursor:pointer;
+  color:var(--default);
+  font-weight:500;
+}
 
 /* 인기 조회 지역 */
 .card--sb{
     background:var(--sb);
+    border-radius:10px;
+    padding:20px 30px;
+    flex-direction:column;
+    align-items: center;
+    justify-content: left;
 }
 
-
+.star{ 
+  background:transparent; 
+  border:0;
+  font-size:14px; line-height:1;
+  color:var(--text2); 
+} 
 
 /* Buttons */
-.btn{
+.flex > .btn{
+  align-self:flex-start;
+  height: 60px;
   background:var(--main);
   border:0;
   border-radius:60px;
   padding:10px 16px;
+  gap:6px;
   cursor:pointer;
   color:var(--default);
+  font-weight:500;
 }
 
 /* 아이콘 span에 붙이면 간격 안정적 */

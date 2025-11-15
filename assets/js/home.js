@@ -9,6 +9,7 @@
   const $btnCalendar  = qs('#btnCalendar');
   const $btnDateReco  = qs('#btnDateReco');
   const $btnPlaceReco = qs('#btnPlaceReco');
+  const $btnFavorites = qs('#btnFavorites');
 
   // region 요소가 없는 다른 페이지에서 home.js를 import했을 때 에러없이 조용히 패스
   if (!$region) {
@@ -33,11 +34,11 @@
   }
 
   try {
-    const regions = await fetchJson('mock/regions_20.json'); // [{code,name}]
+    const regions = await fetchJson('mock/regions_20.json'); //  [ {code, name, province} ]
     regions.forEach(r=>{
       const opt = document.createElement('option');
       opt.value = r.code;         // 내부 값(코드)
-      opt.textContent = r.name;   // 사용자 표시명
+      opt.textContent = r.province ? `${r.province} ${r.name}` : r.name;   // 사용자 표시명
       $region.appendChild(opt);
     });
   } catch (e) {
@@ -45,7 +46,7 @@
     // 최소 fallback
     if ($region.options.length <= 1) {
       $region.insertAdjacentHTML('beforeend',
-        '<option value="108">서울특별시</option><option value="159">부산광역시</option>');
+        '<option value="108">서울</option><option value="159">부산</option>');
     }
   }
 
@@ -53,10 +54,22 @@
   const $popularList = qs('#popularList');
   if ($popularList) {
     try{
-      const popular = await fetchJson('mock/popular_regions.json'); // [{name,popular_count}]
-      const top5 = popular.slice(0,5);
-      $popularList.innerHTML = top5.map(r=>`<li>${r.name}</li>`).join('');
-    }catch(e){
+      const popularJson = await fetchJson('mock/popular_regions.json');
+      const regions = await fetchJson('mock/regions_20.json'); // 이름 조인용
+      const regionMap = Object.fromEntries(regions.map(r => [r.code, r]));
+
+      // {ok:true, data:[...]} 구조이므로 .data 사용
+      const popularArr = popularJson.data || popularJson;
+      const top5 = popularArr.slice(0, 5);
+
+      // 지역코드 → 지역이름 변환
+      $popularList.innerHTML = top5.map(r => {
+        const info = regionMap[r.region_code] || {};
+        const name = info.province ? `${info.province} ${info.name}` : info.name || r.region_code;
+        return `<li>${name} (${r.popular_count})</li>`;
+      }).join('');
+    } catch (e) {
+      console.error('⚠️ 인기지역 로드 실패:', e);
       $popularList.innerHTML = `<li>데이터가 없습니다.</li>`;
     }
   }
@@ -82,6 +95,9 @@
     el.addEventListener('change', applyRules);
     el.addEventListener('input',  applyRules);
   });
+
+  // 즐겨찾기 버튼은 항상 활성화
+  if ($btnFavorites) $btnFavorites.disabled = false;
 
   // 5) 페이지 이동 (쿼리스트링 구성)
   if ($btnCalendar) {  // 캘린더 버튼
@@ -122,6 +138,13 @@
         params.set('ignoreRegion', '1'); // 스펙: 지역 무시 플래그
       }
       location.href = `place_reco.html?${params.toString()}`;
+    });
+  }
+
+  if ($btnFavorites) {
+    $btnFavorites.addEventListener('click', () => {
+      // 필터를 넘길 필요 없으면 그냥 페이지 이동만:
+      location.href = 'bookmark.html';
     });
   }
 })();

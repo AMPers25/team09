@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>여행 갈 날짜 추천</title>
+    <link rel="stylesheet" href="../assets/css/common.css" />
+    <link rel="stylesheet" href="../assets/css/page3.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <!-- 상단 헤더 -->
+    <header class="header-base header--page">
+        <div class="container" style="display:flex;align-items:center;justify-content: flex-start;gap:16px;">
+            <!--홈 아이콘-->
+            <a class="go-home" href="index.html" aria-label="홈으로">
+                <i class="fa-solid fa-house"></i>   
+            </a>
+
+            <!-- 재선택 바 -->
+            <div class="filters">
+                <label class="field">
+                    <select id="region">
+                        <option value="" disabled selected>지역 선택</option>
+                    </select>
+                </label>
+
+                <label class="field">
+                    <input type="date" id="start" placeholder="시작 날짜">
+                </label>
+
+                <span class="tilde">~</span>
+
+                <label class="field">
+                    <input type="date" id="end" placeholder="종료 날짜">
+                </label>
+            </div>             
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- 제목 + 버튼을 한 줄 -->
+        <div class="page-head">
+            <h1 class="page-title">여행 적합지수 높은 날</h1>
+            <button id="goCleanDays" class="btn-mini">미세먼지 클린데이 보기</button>
+        </div>
+        <section class="card card--panel">
+            <ul id="list" class="plain-list" aria-live="polite">
+                <!-- JS가 렌더링 -->
+            </ul>
+            <div id="empty" class="empty" hidden>해당 조건에 맞는 기간이 없습니다.</div>
+        </section>
+    </main>
+
+    <script src="../assets/js/app.js"></script>
+    <script src="../assets/js/date_reco.js"></script>
+</body>
+</html>

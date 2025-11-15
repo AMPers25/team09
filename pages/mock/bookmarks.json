@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "data": [
+    { "bookmark_id": 1, "region_code": "108", "start_date": "2023-10-01", "end_date": "2023-10-04" },
+    { "bookmark_id": 2, "region_code": "159", "start_date": "2019-10-07", "end_date": "2019-10-10" },
+    { "bookmark_id": 3, "region_code": "283", "start_date": "2019-10-07", "end_date": "2019-10-10" },
+    { "bookmark_id": 4, "region_code": "184", "start_date": "2019-10-07", "end_date": "2019-10-10" },
+    { "bookmark_id": 5, "region_code": "104", "start_date": "2019-10-07", "end_date": "2019-10-10" }
+  ]
+}
