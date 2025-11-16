@@ -26,12 +26,19 @@ class TemperatureCalendarController {
         // 1. 입력 파라미터 유효성 검증 및 추출
         $regionCode = $params['regionCode'] ?? null;
         // int로 형변환하고 유효성 검증을 위해 filter_var 사용
-        $year = filter_var($$params['year'] ?? null, FILTER_VALIDATE_INT);
+        // NOTE: 이중 $ 오타를 수정했습니다.
+        $year = filter_var($params['year'] ?? null, FILTER_VALIDATE_INT);
         $month = filter_var($params['month'] ?? null, FILTER_VALIDATE_INT);
 
         // 필수 파라미터 누락 검사
         if (!$regionCode || $year === false || $month === false) {
             $this->sendErrorResponse(400, "잘못된 요청입니다. regionCode, year, month 파라미터를 확인해주세요.");
+            return;
+        }
+
+        // 연도 값 검사 (0 이하, 너무 큰 값 등 비정상적인 값 제외)
+        if ($year <= 0 || $year > 9999) {
+            $this->sendErrorResponse(400, "유효한 연도(year) 값이 아닙니다.");
             return;
         }
 
@@ -65,10 +72,13 @@ class TemperatureCalendarController {
      * @param array $data 응답 데이터
      */
     private function sendJsonResponse(int $statusCode, array $data) {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
+        // 테스트 환경에서는 헤더 설정 중복 오류를 방지하기 위해 headers_sent() 체크를 추가했습니다.
+        if (!headers_sent()) {
+            http_response_code($statusCode);
+            header('Content-Type: application/json');
+        }
         echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-        // 실제 환경에서는 exit를 통해 즉시 종료
+        // 실제 환경에서는 exit;를 통해 즉시 종료
         // exit;
     }
 
