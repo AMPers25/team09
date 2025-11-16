@@ -6,6 +6,7 @@
  */
 
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../src/model/TemperatureCalendarModel.php';
 
 use PHPUnit\Framework\TestCase;
 use App\Model\TemperatureCalendarModel;
