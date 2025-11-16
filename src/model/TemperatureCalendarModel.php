@@ -39,6 +39,12 @@ class TemperatureCalendarModel {
                 d.date_id ASC;
         ";
 
+        // [수정]: SQL 쿼리 문자열 정규화 (줄바꿈/다중 공백 제거)
+        // 1. 주석 제거 (선택 사항이지만 안전함)
+        $cleanSql = preg_replace("/(--.*)|(\/\*.*?\*\/)/s", '', $sql);
+        // 2. 줄바꿈, 탭, 다중 공백을 단일 공백으로 치환하고 앞뒤 공백 제거
+        $cleanSql = trim(preg_replace('/\s+/', ' ', $cleanSql));
+
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':regionCode', $regionCode, \PDO::PARAM_STR);
