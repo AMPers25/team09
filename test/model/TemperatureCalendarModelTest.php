@@ -1,7 +1,8 @@
 <?php
 /**
  * File: test/model/TemperatureCalendarModelTest.php
- * * Description: 기능 2-2. 기온 캘린더 조회 Test
+ * Author: 김연수 (sooooscode)
+ * Description: 기능 2-2. 기온 캘린더 조회 Test
  * Last Updated: 2025-11-16
  */
 
@@ -23,19 +24,25 @@ class TemperatureCalendarModelTest extends TestCase
         $year = 2025;
         $month = 10;
 
+        // Mock 데이터 정의 (API Success Response Data 구조와 일치해야 함)
         $expectedResult = [
             ['date_id' => '2025-10-01', 'avg_temp' => 18.4],
             ['date_id' => '2025-10-02', 'avg_temp' => 19.0],
         ];
 
+        // Model에서 정규화될 것으로 예상되는 SQL 문자열 (d.year로 수정됨)
+        // prepare()는 stringContains로 체크하므로 유연하나, 주석으로 참고합니다.
+        // $expectedSql = 'SELECT d.date_id, t.avg_temp FROM Temperature t JOIN DateDim d ON t.date_id = d.date_id WHERE t.region_code = :regionCode AND d.year = :year AND d.month = :month ORDER BY d.date_id ASC;';
+
+
         // 1. PDOStatement Mocking
         $stmtMock = $this->createMock(\PDOStatement::class);
         $stmtMock->expects($this->once())->method('execute')->willReturn(true);
 
-        // 3개의 파라미터 바인딩 검증 (순서: :regionCode, :month, :year)
+        // 3개의 파라미터 바인딩 검증 (Model의 바인딩 순서: :regionCode, :year, :month 에 맞게 수정)
         $stmtMock->expects($this->at(0))->method('bindParam')->with(':regionCode', $regionCode, \PDO::PARAM_STR);
-        $stmtMock->expects($this->at(1))->method('bindParam')->with(':month', $month, \PDO::PARAM_INT);
-        $stmtMock->expects($this->at(2))->method('bindParam')->with(':year', $year, \PDO::PARAM_INT);
+        $stmtMock->expects($this->at(1))->method('bindParam')->with(':year', $year, \PDO::PARAM_INT); // 순서 변경
+        $stmtMock->expects($this->at(2))->method('bindParam')->with(':month', $month, \PDO::PARAM_INT); // 순서 변경
 
         $stmtMock->expects($this->once())->method('fetchAll')->willReturn($expectedResult);
 
@@ -43,7 +50,8 @@ class TemperatureCalendarModelTest extends TestCase
         $dbMock = $this->createMock(\PDO::class);
         $dbMock->expects($this->once())
             ->method('prepare')
-            ->with($this->stringContains('SELECT date_id, t.avg_temp'))
+            // d.year로 변경된 쿼리 문자열에 대한 준비 호출을 검증합니다.
+            ->with($this->stringContains('AND d.year = :year'))
             ->willReturn($stmtMock);
 
         // 3. Model 인스턴스 생성 및 Mock DB 주입
