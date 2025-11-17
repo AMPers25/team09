@@ -2,7 +2,7 @@
 /**
  * File: test/model/WeatherRainRollupModelTest.php
  * Author: 황혜린
- * Description: 특정 지역/기간의 일별 강수량 + 월 합계(ROLLUP) 모델 테스트
+ * Description: 기능 2-3. 특정 지역/기간의 일별 강수량 + 월 합계(ROLLUP) 모델 테스트
  * Last Updated: 2025-11-17
  */
 

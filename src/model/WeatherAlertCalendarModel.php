@@ -2,7 +2,7 @@
 /**
  * File: src/model/WeatherAlertCalendarModel.php
  * Author: 황혜린
- * Description: 특정 월의 지역별 기상 특보 목록 조회 Model
+ * Description: 기능 2-4. 특정 월의 지역별 기상 특보 목록 조회 Model
  * Last Updated: 2025-11-17
  */
 

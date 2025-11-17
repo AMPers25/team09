@@ -2,7 +2,7 @@
 /**
  * File: src/controller/WeatherRainRollupController.php
  * Author: 황혜린
- * Description: 특정 지역/기간의 일별 강수량 + 월 합계(ROLLUP) 조회 Controller
+ * Description: 기능 2-3. 특정 지역/기간의 일별 강수량 + 월 합계(ROLLUP) 조회 Controller
  * Last Updated: 2025-11-17
  */
 
