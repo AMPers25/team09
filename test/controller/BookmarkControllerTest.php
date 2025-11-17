@@ -1,6 +1,6 @@
 <?php
 /**
- * File: src/test/controller/BookmarkControllerTest.php
+ * File: src/model/BookmarkControllerTest.php
  * Author: 황혜린
  * Description: 기능 4. 즐겨찾기 컨트롤러 테스트
  * Last Updated: 2025-11-09
