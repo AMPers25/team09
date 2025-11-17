@@ -23,15 +23,17 @@ PHP 버전: 8.2.12
 
 프로젝트 요구사항인 **4가지 고급 분석 기능**을 충족하기 위해, Model 클래스를 **단일 책임 원칙(SRP)**에 따라 기능별로 분리했습니다.
 
-| 기능 ID | Model 클래스 | 분석 목적 및 충족 요구사항 |
-| :---: | :--- | :--- |
-| **3-1** | `CleanDayModel.php` | **PM10 연속 클린 기간 추천.** Windowing (Gap-and-Island) 및 Ranking 구현. |
-| **3-2** | `BestPeriodModel.php` | **주간 여행 적합 기간 추천.** 복합 그룹핑(Aggregate) 및 Ranking 구현. |
-| **3-3** | `BestRegionModel.php` | **기간별 지역 랭킹 추천.** Ranking, Aggregates 구현 (province 정보 포함). |
+|  기능 ID  | Model 클래스 | 분석 목적 및 충족 요구사항                                               |
+|:-------:| :--- |:--------------------------------------------------------------|
+| **2-2** | `TemperatureCalendarModel.php` | **월/지역별 일일 평균 기온 목록 조회** 캘린더 UI 구성에 필요한 기본 조회 및 정규화된 데이터 제공   |
+| **3-1** | `CleanDayModel.php` | **PM10 연속 클린 기간 추천** Windowing (Gap-and-Island) 및 Ranking 구현  |
+| **3-2** | `BestPeriodModel.php` | **주간 여행 적합 기간 추천** 복합 그룹핑(Aggregate) 및 Ranking 구현             |
+| **3-3** | `BestRegionModel.php` | **기간별 지역 랭킹 추천** Ranking, Aggregates 구현 (province 정보 포함)      |
 
 ---
 
 ## 3. 🛡️ 테스트 및 TDD 지원
 
 * **테스트 구조:** 단위 테스트 파일은 `test/model/` 및 `test/controller/` 디렉토리에 위치합니다.
-* **검증 방식:** 모든 Model/Controller는 **Mocking** 기법을 사용하여 **DB 연결 없이** 비즈니스 로직과 오류 핸들링 경로의 정확성(TDD)을 검증했습니다.
+* **1차 검증 방식:** 모든 Model/Controller는 **Mocking** 기법을 사용하여 **DB 연결 없이** 비즈니스 로직과 오류 핸들링 경로의 정확성(TDD)을 검증했습니다.
+* **통합 검증 계획:** API 개발 완료 후, XAMPP 환경에서 실제 DB에 연결하여 백엔드 통합 테스트를 진행하며, 이후 프론트엔드 연결을 통해 End-to-End 테스트를 완료합니다.
