@@ -2,8 +2,8 @@
 /**
  * File: src/model/WeatherDailyModel.php
  * Author: 강한나
- * Description: 기능 X. 일일 날씨 통합 조회 Model
- * Last Updated: 2025-11-09
+ * Description: 기능 2-1. 일일 날씨 통합 조회 Model
+ * Last Updated: 2025-11-17
  */
 
 namespace App\Model;

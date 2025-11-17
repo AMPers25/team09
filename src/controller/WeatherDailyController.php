@@ -4,7 +4,7 @@
  * Author: 강한나
  * Description: 특정 지역/날짜 일일 날씨 통합 조회 Controller
  * URL: GET /api/weather/daily
- * Last Updated: 2025-11-09
+ * Last Updated: 2025-11-17
  */
 
 namespace App\Controller;
@@ -19,6 +19,14 @@ class WeatherDailyController
     public function __construct($dbConnection)
     {
         $this->dbConnection = $dbConnection;
+    }
+
+    /**
+     * Model 생성 헬퍼 (테스트 시 Mocking 용이)
+     */
+    protected function getModel(): WeatherDailyModel
+    {
+        return new WeatherDailyModel($this->dbConnection);
     }
 
 
@@ -105,7 +113,7 @@ class WeatherDailyController
 
         try {
             // 5) Model 호출
-            $model = new \App\Model\WeatherDailyModel($this->dbConnection);;
+            $model = $this->getModel();
             $row   = $model->getDailyWeather($regionCode, $date);
 
             if ($row === null) {
