@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>날씨 상세 정보</title>
+    <link rel="stylesheet" href="../assets/css/day-info.css">
+</head>
+<body>
+    <header class="header-bar">
+        <div class="header-left">
+            <button class="back-button" aria-label="이전 화면으로">←</button>
+        </div>
+
+    </header>
+
+    <main class="page-wrapper">
+        <section class="summary-block">
+            <img id="summaryIcon" class="summary-icon" src="./icons/clear.png" alt="날씨 아이콘">
+            <div class="summary-details">
+
+                
+
+
+                <!-- API 연결 이후 -->
+                <!-- 아래의 디폴트 값 없애기 -->
+
+                <div class="summary-date" id="summaryDate">2024년 9월 17일</div>
+                <div class="summary-temp" id="summaryTemp">18° / 25°</div>
+                <span class="summary-condition" id="summaryCondition">맑음</span>
+            </div>
+        </section>
+
+        <section class="card-grid">
+            <article class="info-card" id="temperatureCard">
+                <h2>기온</h2>
+                <div class="info-list" id="temperatureList"></div>
+            </article>
+            <article class="info-card" id="rainCard">
+                <h2>강수량</h2>
+                <div class="info-list" id="rainList"></div>
+            </article>
+            <article class="info-card" id="alertCard">
+                <h2>경보 / 특보</h2>
+                <div class="info-list" id="alertList"></div>
+            </article>
+            <article class="info-card" id="airQualityCard">
+                <h2 id="airQualityTitle">미세먼지 농도 (PM 10)</h2>
+                <div class="air-quality-score" id="airQualityValue">--</div>
+                <div class="info-list" id="airQualityMeta"></div>
+            </article>
+        </section>
+    </main>
+
+    <!-- 서버 사이드에서 JSON을 주입할 수 있는 공간 -->
+    <!--
+    <script id="dayInfoData" type="application/json">
+        { ... }
+    </script>
+    -->
+
+    <script>
+        const WEATHER_ICON_MAP = {
+            '맑음': './icons/clear.png',
+            '구름': './icons/partly_cloudy.png',
+            '흐림': './icons/mostly_cloudy.png',
+            '흐린': './icons/overcast.png',
+            '비': './icons/rain.png',
+            '눈': './icons/snow.png'
+        };
+
+        // URL 파라미터에서 날짜와 지역 코드 읽기
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date') || '';
+        const regionCode = urlParams.get('region_code') || urlParams.get('region') || '';
+
+        // 날짜를 한국어 형식으로 변환 (YYYY-MM-DD -> YYYY년 M월 D일)
+        function formatDateToKorean(dateString) {
+            if (!dateString) return '--';
+            try {
+                const date = new Date(dateString + 'T00:00:00');
+                if (isNaN(date.getTime())) return '--';
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                return `${year}년 ${month}월 ${day}일`;
+            } catch (error) {
+                console.warn('날짜 파싱 실패:', error);
+                return '--';
+            }
+        }
+
+        const detailElements = {
+            summaryIcon: document.getElementById('summaryIcon'),
+            summaryDate: document.getElementById('summaryDate'),
+            summaryTemp: document.getElementById('summaryTemp'),
+            summaryCondition: document.getElementById('summaryCondition'),
+            temperatureCard: document.getElementById('temperatureCard'),
+            temperatureList: document.getElementById('temperatureList'),
+            rainCard: document.getElementById('rainCard'),
+            rainList: document.getElementById('rainList'),
+            alertCard: document.getElementById('alertCard'),
+            alertList: document.getElementById('alertList'),
+            airQualityCard: document.getElementById('airQualityCard'),
+            airQualityTitle: document.getElementById('airQualityTitle'),
+            airQualityValue: document.getElementById('airQualityValue'),
+            airQualityMeta: document.getElementById('airQualityMeta')
+        };
+
+        async function loadDayInfoData() {
+            if (!regionCode || !dateParam) {
+                throw new Error('region_code와 date 파라미터가 필요합니다.');
+            }
+
+            try {
+                const params = new URLSearchParams({
+                    region_code: regionCode,
+                    date: dateParam
+                });
+                
+                const response = await fetch(`/api/day-info?${params.toString()}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API 응답 오류: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (!data) {
+                    throw new Error('API에서 데이터를 받지 못했습니다.');
+                }
+
+                // API 응답에 날짜가 없으면 URL 파라미터의 날짜 사용
+                if (!data.dateLabel && dateParam) {
+                    data.dateLabel = formatDateToKorean(dateParam);
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API 호출 실패:', error);
+                throw error;
+            }
+        }
+
+        function populateList(container, items = []) {
+            container.innerHTML = '';
+            items.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'info-row';
+                row.innerHTML = `<span>${item.label}</span><span>${item.value ?? '--'}</span>`;
+                container.appendChild(row);
+            });
+        }
+
+        function toggleBlock(element, hasContent) {
+            element.classList.toggle('is-hidden', !hasContent);
+        }
+
+        function applyDetailData(data) {
+            if (!data) {
+                throw new Error('데이터가 없습니다.');
+            }
+
+            // 날짜는 서버 데이터가 있으면 사용하고, 없으면 URL 파라미터의 날짜 사용
+            const displayDate = data.dateLabel || formatDateToKorean(dateParam);
+            detailElements.summaryDate.textContent = displayDate;
+            detailElements.summaryTemp.textContent = data.temperatureRange || '--';
+            detailElements.summaryCondition.textContent = data.condition || '--';
+
+            const iconSrc = data.icon || WEATHER_ICON_MAP[data.condition] || WEATHER_ICON_MAP['맑음'];
+            detailElements.summaryIcon.src = iconSrc;
+            detailElements.summaryIcon.alt = data.condition || '날씨 아이콘';
+
+            populateList(detailElements.temperatureList, data.temperature || []);
+            toggleBlock(detailElements.temperatureCard, (data.temperature || []).length > 0);
+
+            populateList(detailElements.rainList, data.rain || []);
+            toggleBlock(detailElements.rainCard, (data.rain || []).length > 0);
+
+            populateList(detailElements.alertList, data.weatherAlert || []);
+            toggleBlock(detailElements.alertCard, (data.weatherAlert || []).length > 0);
+
+            const air = data.airQuality;
+            if (air && (air.value != null || (air.meta && air.meta.length))) {
+                detailElements.airQualityTitle.textContent = air.title || 'Air Quality';
+                detailElements.airQualityValue.textContent = air.value ?? '--';
+                populateList(detailElements.airQualityMeta, air.meta || []);
+                detailElements.airQualityCard.classList.remove('is-hidden');
+            } else {
+                detailElements.airQualityCard.classList.add('is-hidden');
+                detailElements.airQualityMeta.innerHTML = '';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const dayInfo = await loadDayInfoData();
+                applyDetailData(dayInfo);
+                setupBackButton();
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+                document.body.innerHTML = `<div style="padding: 20px; text-align: center;">
+                    <h2>데이터를 불러올 수 없습니다</h2>
+                    <p>${error.message}</p>
+                    <p>브라우저 콘솔을 확인하세요.</p>
+                </div>`;
+            }
+        });
+
+        function setupBackButton() {
+            const backBtn = document.querySelector('.back-button');
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    window.history.back();
+                });
+            }
+        }
+    </script>
+</body>
+</html>
