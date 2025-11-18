@@ -1,6 +1,6 @@
 <?php
 /**
- * File: src/model/WeatherDailyModel.php
+ * File: src/model/DailyModel.php
  * Author: 강한나
  * Description: 기능 2-1. 일일 날씨 통합 조회 Model
  * Last Updated: 2025-11-17
@@ -8,7 +8,7 @@
 
 namespace App\Model;
 
-class WeatherDailyModel
+class DailyModel
 {
     /** @var \PDO */
     private $db;
@@ -60,7 +60,7 @@ class WeatherDailyModel
 
             return $row;
         } catch (\PDOException $e) {
-            error_log('DB Error in WeatherDailyModel::getDailyWeather: ' . $e->getMessage());
+            error_log('DB Error in DailyModel::getDailyWeather: ' . $e->getMessage());
             throw new \Exception('일일 날씨 데이터 조회 중 서버 내부 오류가 발생했습니다.');
         }
     }

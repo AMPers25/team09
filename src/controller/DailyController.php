@@ -1,6 +1,6 @@
 <?php
 /**
- * File: src/controller/WeatherDailyController.php
+ * File: src/controller/DailyController.php
  * Author: 강한나
  * Description: 특정 지역/날짜 일일 날씨 통합 조회 Controller
  * URL: GET /api/weather/daily
@@ -9,9 +9,9 @@
 
 namespace App\Controller;
 
-use App\Model\WeatherDailyModel;
+use App\Model\DailyModel;
 
-class WeatherDailyController
+class DailyController
 {
     /** @var \PDO */
     private $dbConnection;
@@ -24,9 +24,9 @@ class WeatherDailyController
     /**
      * Model 생성 헬퍼 (테스트 시 Mocking 용이)
      */
-    protected function getModel(): WeatherDailyModel
+    protected function getModel(): DailyModel
     {
-        return new WeatherDailyModel($this->dbConnection);
+        return new DailyModel($this->dbConnection);
     }
 
 

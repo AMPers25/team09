@@ -107,11 +107,6 @@
         const monthParam = urlParams.get('month');
         const initialMonth = monthParam ? parseInt(monthParam, 10) - 1 : new Date().getMonth();
         
-        // region_code가 필수이므로 없으면 에러
-        if (!regionCode) {
-            throw new Error('잘못된 접근: region_code 파라미터가 필요합니다.');
-        }
-        
         let currentDate = new Date(FIXED_YEAR, initialMonth, 1);
         let calendarData = null;
         let currentTab = 'temperature';
@@ -119,6 +114,11 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             try {
+                // region_code가 필수이므로 없으면 에러 (DOMContentLoaded 안에서 체크)
+                if (!regionCode) {
+                    throw new Error('잘못된 접근: region_code 파라미터가 필요합니다.');
+                }
+                
                 updateMonthDisplay(); // 초기 로드 시 버튼 상태 업데이트
                 loadCalendarData();
                 setupTabHandlers();
@@ -259,7 +259,7 @@
                     month: String(month).padStart(2, '0')
                 });
                 
-                const response = await fetch(`/api/temp-calendar?${params.toString()}`, {
+                const response = await fetch(`../api/temp-calendar.php?${params.toString()}`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -374,7 +374,7 @@
             });
 
             try {
-                const response = await fetch(`/api/day-info-link?${query.toString()}`, {
+                const response = await fetch(`../api/day-info-link.php?${query.toString()}`, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'

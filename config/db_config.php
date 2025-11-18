@@ -8,7 +8,8 @@
  */
 
 // 1. 데이터베이스 호스트 주소
-define("DB_HOST", "localhost"); // XAMPP 환경의 기본값
+// macOS XAMPP에서는 localhost 대신 127.0.0.1 사용 권장
+define("DB_HOST", "127.0.0.1"); // XAMPP 환경의 기본값
 
 // 2. 데이터베이스 사용자 ID (예: team09)
 define("DB_USER", "team09");
