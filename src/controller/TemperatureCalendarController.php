@@ -24,7 +24,7 @@ class TemperatureCalendarController {
      */
     public function getDailyCalendar(array $params) {
         // 1. 입력 파라미터 유효성 검증 및 추출
-        $regionCode = $params['regionCode'] ?? null;
+        $regionCode = $params['region_code'] ?? null;
         // int로 형변환하고 유효성 검증을 위해 filter_var 사용
         $month = filter_var($params['month'] ?? null, FILTER_VALIDATE_INT);
 
