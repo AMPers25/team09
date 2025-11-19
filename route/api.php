@@ -35,23 +35,23 @@ return function (\App\Core\Router $router) {
     //================================================================
 
     // 2-1) 특정 날짜·특정 지역의 모든 날씨 정보 조회
-    // URL: /api/calendar/daily/{regionCode}/{date}
-    $router->get('/api/calendar/daily/{regionCode}/{date}',
+    // URL: /api/calendar/daily/{region_code}/{date}
+    $router->get('/api/calendar/daily/{region_code}/{date}',
         WeatherDailyController::class, 'getDailyWeather');
 
     // 2-2) 기온 캘린더 조회 (월/지역별 일일 평균 기온)
-    // URL: /api/calendar/temperature/{regionCode}/{month}
+    // URL: /api/calendar/temperature/{region_code}/{month}
     $router->get('/api/calendar/temperature/{region_code}/{month}',
         TemperatureCalendarController::class, 'getDailyCalendar');
 
     // 2-3) 강수량 캘린더 조회
-    // URL: /api/calendar/rain/{regionCode}/{year}/{month}
-    $router->get('/api/calendar/rain/{regionCode}/{year}/{month}',
+    // URL: /api/calendar/rain/{region_code}/{year}/{month}
+    $router->get('/api/calendar/rain/{region_code}/{year}/{month}',
         WeatherRainRollupController::class, 'getRainCalendar');
 
     // 2-4) 경보 캘린더 조회
-    // URL: /api/calendar/alert/{regionCode}/{year}/{month}
-    $router->get('/api/calendar/alert/{regionCode}/{year}/{month}',
+    // URL: /api/calendar/alert/{region_code}/{year}/{month}
+    $router->get('/api/calendar/alert/{region_code}/{year}/{month}',
         WeatherAlertCalendarController::class, 'getAlertCalendar');
 
 
@@ -90,12 +90,12 @@ return function (\App\Core\Router $router) {
         BookMarkController::class, 'getBookmarkList');
 
     // 4-2) 즐겨찾기 삭제 (DELETE)
-    // URL: /api/bookmarks/{bookmarkId} - 즐겨찾기 ID를 URL 경로로 받도록 수정
-    $router->add('DELETE', '/api/bookmarks/{bookmarkId}',
+    // URL: /api/bookmarks/{bookmark_id} - 즐겨찾기 ID를 URL 경로로 받도록 수정
+    $router->add('DELETE', '/api/bookmarks/{bookmark_id}',
         BookMarkController::class, 'deleteBookmark');
 
     // 즐겨찾기 수정 (PUT/PATCH)
-    // URL: /api/bookmarks/{bookmarkId}
-    $router->add('PUT', '/api/bookmarks/{bookmarkId}',
+    // URL: /api/bookmarks/{bookmark_id}
+    $router->add('PUT', '/api/bookmarks/{bookmark_id}',
         BookMarkController::class, 'updateBookmark');
 };
