@@ -25,6 +25,10 @@
   const $start  = $('#start');
   const $end    = $('#end');
 
+  const MIN_DATE = '2024-01-01';
+  const MAX_DATE = '2024-12-31';
+
+
   async function fillRegions(){
     // placeholder 남겨두고 뒤에 붙이기
     while($region.options.length>1) $region.remove(1);
@@ -39,9 +43,34 @@
   }
 
   function setDates(){
-    if (has(start)) $start.value = start;
-    if (has(end))   $end.value   = end;
+    // 1) 먼저 쿼리스트링 값 있으면 반영
+    if ($start && has(start)) $start.value = start;
+    if ($end   && has(end))   $end.value   = end;
+
+    // 2) 둘 다 비어있으면 → 2024년 오늘 날짜 기준으로 기본값 세팅
+    if (!($start && $end)) return;
+    const hasStart = has($start.value);
+    const hasEnd   = has($end.value);
+    if (hasStart || hasEnd) return;  // 하나라도 이미 값 있으면 건드리지 않음
+
+    const now = new Date();  // 오늘 (예: 2025-11-18)
+    // 2024년 + 현재 월/일로 치환
+    let base = new Date(2024, now.getMonth(), now.getDate());
+
+    const min = new Date(MIN_DATE);
+    const max = new Date(MAX_DATE);
+    if (base < min) base = min;
+    if (base > max) base = max;
+
+    const yyyy = base.getFullYear();
+    const mm   = String(base.getMonth()+1).padStart(2,'0');
+    const dd   = String(base.getDate()).padStart(2,'0');
+    const baseStr = `${yyyy}-${mm}-${dd}`;
+
+    $start.value = baseStr;
+    $end.value   = baseStr;
   }
+
 
   function reloadWith(next){
     const q = new URLSearchParams({
@@ -86,7 +115,7 @@
   async function loadData(){
     let rows = [];
     try{
-      const u = new URL('/api/air-quality/best-period', location.origin);
+      const u = new URL('/api/air-quality/best-period', location.origin);          // 나중에 api 이름 맞게 수정!!!!!!!!!!!!1
       if (has($region.value)) u.searchParams.set('region', $region.value);
       if (has($start.value))  u.searchParams.set('start',  $start.value);
       if (has($end.value))    u.searchParams.set('end',    $end.value);
@@ -124,7 +153,7 @@
         </button>
 
         <div>
-          <div class="li-range">${r.rank}. ${fmt(r.start_date)} ~ ${fmt(r.end_date)}</div>
+          <div class="li-range">${r.rank}.  ${fmt(r.start_date)} ~ ${fmt(r.end_date)}</div>
         </div>
 
         <div></div>
@@ -156,37 +185,89 @@
       return;
     }
 
-    // 5-b) 즐겨찾기(별)
+    // 5-b) 즐겨찾기(별) 토글
     const starBtn = e.target.closest('.star');
-    if (starBtn){
-      // 이미 선택되어 있으면 아무것도 안 함(원한다면 토글 삭제도 가능)
-      if (starBtn.classList.contains('active')) return;
+    if (!starBtn) return;
 
-      starBtn.classList.add('active');
-      starBtn.innerHTML = '<i class="fa-solid fa-star"></i>';
+    // 이 페이지는 "특정 지역" 기준이니까 region_code는 선택된 값 사용
+    const regionCode = $region && has($region.value) ? $region.value : null;
+    const start = li.dataset.start;
+    const end   = li.dataset.end;
 
-      const payload = {
-        region_code: $region.value,
-        start_date : li.dataset.start,
-        end_date   : li.dataset.end
-      };
+    if (!regionCode || !start || !end) {
+      alert('즐겨찾기 정보를 찾을 수 없습니다.');
+      return;
+    }
 
-      // 서버에 저장 시도(낙관적 UI)
-      try{
-        const r = await fetch('/api/bookmarks', {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify(payload)
-        });
-        // 서버에서 오류가 나면 롤백
-        if (!r.ok) throw new Error('save failed');
-      }catch{
-        // mock: localStorage에 저장해두기(선택)
-        const key = 'bookmarks';
-        const cur = JSON.parse(localStorage.getItem(key) || '[]');
-        cur.push({ ...payload });
-        localStorage.setItem(key, JSON.stringify(cur));
+    // 이미 active면 ⇒ 즐겨찾기 해제 (DELETE B안: region_code + start_date + end_date)
+    if (starBtn.classList.contains('active')) {
+      // 1) UI 먼저 토글 (낙관적)
+      starBtn.classList.remove('active');
+      starBtn.innerHTML = '<i class="fa-regular fa-star"></i>';
+
+      try {
+        // /api/bookmarks?region_code=...&start_date=...&end_date=...
+        const url = new URL('/api/bookmarks', location.origin);
+        url.searchParams.set('region_code', regionCode);
+        url.searchParams.set('start_date', start);
+        url.searchParams.set('end_date',   end);
+
+        const res = await fetch(url.toString(), { method: 'DELETE' });
+        if (!res.ok) throw new Error('delete failed');
+
+        // (선택) mock 로컬스토리지에도 저장해뒀다면 같이 제거
+        const key  = 'bookmarks';
+        const list = JSON.parse(localStorage.getItem(key) || '[]');
+        const next = list.filter(x =>
+          !(String(x.region_code) === String(regionCode) &&
+            x.start_date === start &&
+            x.end_date   === end)
+        );
+        localStorage.setItem(key, JSON.stringify(next));
+      } catch (err) {
+        // 서버 삭제 실패 시 UI 롤백
+        starBtn.classList.add('active');
+        starBtn.innerHTML = '<i class="fa-solid fa-star"></i>';
+        console.error(err);
+        alert('즐겨찾기 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
       }
+      return;
+    }
+
+    // 아직 active가 아니면 ⇒ 즐겨찾기 추가 (POST)
+    starBtn.classList.add('active');
+    starBtn.innerHTML = '<i class="fa-solid fa-star"></i>';
+
+    const payload = {
+      region_code: regionCode,
+      start_date : start,
+      end_date   : end
+    };
+
+    try{
+      const r = await fetch('/api/bookmarks', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!r.ok) throw new Error('save failed');
+
+      // TODO: 서버가 bookmark_id를 응답으로 준다면,
+      // 여기서 li.dataset.id = res.bookmark_id 같은 식으로 저장해둘 수도 있음.
+    }catch(err){
+      console.error(err);
+      // 서버 저장 실패 시 UI 롤백 + mock 저장(선택)
+      starBtn.classList.remove('active');
+      starBtn.innerHTML = '<i class="fa-regular fa-star"></i>';
+
+      // 로컬에서라도 기억하고 싶다면 주석 해제해서 사용
+      /*
+      const key = 'bookmarks';
+      const cur = JSON.parse(localStorage.getItem(key) || '[]');
+      cur.push({ ...payload });
+      localStorage.setItem(key, JSON.stringify(cur));
+      */
+      alert('즐겨찾기 추가에 실패했습니다. 잠시 후 다시 시도해주세요.');
     }
   }
 

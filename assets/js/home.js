@@ -11,6 +11,48 @@
   const $btnPlaceReco = qs('#btnPlaceReco');
   const $btnFavorites = qs('#btnFavorites');
 
+  const MIN_DATE = '2024-01-01';
+  const MAX_DATE = '2024-12-31';
+
+  // min/max 속성 강제 세팅 
+  if ($start) {
+    $start.min = MIN_DATE;
+    $start.max = MAX_DATE;
+  }
+  if ($end) {
+    $end.min = MIN_DATE;
+    $end.max = MAX_DATE;
+  }
+
+  // 쿼리스트링 날짜가 없는 경우에만 기본값 넣기
+  function setDefaultDatesIfEmpty() {
+    if (!($start && $end)) return;
+
+    const hasStart = has($start.value);
+    const hasEnd   = has($end.value);
+    if (hasStart || hasEnd) return;   // 이미 값 있으면(다른 페이지에서 넘어온 경우) 건드리지 않음
+
+    const now = new Date();                      // 오늘 (예: 2025-11-18)
+    let base = new Date(2024, now.getMonth(), now.getDate()); // 2024-11-18 이런 식으로 치환
+
+    // 2024-01-01 ~ 2024-12-31 범위 안으로 잘라주기
+    const min = new Date('2024-01-01');
+    const max = new Date('2024-12-31');
+    if (base < min) base = min;
+    if (base > max) base = max;
+
+    const yyyy = base.getFullYear();
+    const mm   = String(base.getMonth() + 1).padStart(2, '0');
+    const dd   = String(base.getDate()).padStart(2, '0');
+    const baseStr = `${yyyy}-${mm}-${dd}`;
+
+    // 시작/종료 기본값은 일단 같은 날로
+    $start.value = baseStr;
+    $end.value   = baseStr;
+  }
+
+  setDefaultDatesIfEmpty();
+
   // region 요소가 없는 다른 페이지에서 home.js를 import했을 때 에러없이 조용히 패스
   if (!$region) {
     console.warn('region <select> not found.');
@@ -79,6 +121,9 @@
     const regionOn = has($region.value);
     const datesOn  = $start && $end && has($start.value) && has($end.value);
 
+    // 시작 날짜와 종료 날짜가 같은 경우 비활성화 처리
+    const sameDate = datesOn && ($start.value === $end.value);
+
     // 규칙:
     // - 지역 X, 날짜 X → 모두 비활성
     // - 지역 O, 날짜 X → 지역추천 비활성 / 캘린더·날짜추천 활성
@@ -86,7 +131,7 @@
     // - 지역 O, 날짜 O → 모두 활성
     if ($btnCalendar)  $btnCalendar.disabled  = !(regionOn || datesOn);
     if ($btnDateReco)  $btnDateReco.disabled  = !regionOn;
-    if ($btnPlaceReco) $btnPlaceReco.disabled = !datesOn;
+    if ($btnPlaceReco) $btnPlaceReco.disabled = !datesOn || sameDate;
   }
 
   applyRules();
@@ -112,7 +157,7 @@
       params.set('year', y);
       params.set('month', m);
 
-      location.href = `calendar_temp.html?${params.toString()}`;
+      location.href = `calendar_temp.html?${params.toString()}`;        // 한나님이 정하신 파일 이름으로 수정!!!!!!!!!!!!
     });
   }
 

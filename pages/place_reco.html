@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>클린데이</title>
+    <title>여행 갈 장소 추천</title>
     <link rel="stylesheet" href="../assets/css/common.css" />
     <link rel="stylesheet" href="../assets/css/page3.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -19,12 +19,6 @@
 
             <!-- 재선택 바 -->
             <div class="filters">
-                <label class="field">
-                    <select id="region">
-                        <option value="" disabled selected>지역 선택</option>
-                    </select>
-                </label>
-
                 <label class="field">
                     <input 
                     type="date" 
@@ -51,20 +45,19 @@
     </header>
 
     <main class="container">
-        <!-- 제목 + 버튼을 한 줄 -->
+        <!-- 제목 한 줄 -->
         <div class="page-head">
-            <h1 class="page-title">미세먼지 연속으로 적었던 기간</h1>
-            <button id="goDateReco" class="btn-mini">여행 갈 날짜 추천받기</button>
+            <h1 class="page-title">여행 적합지수 높은 지역</h1>
         </div>
         <section class="card card--panel">
             <ul id="list" class="plain-list" aria-live="polite">
                 <!-- JS가 렌더링 -->
             </ul>
-            <div id="empty" class="empty" hidden>해당 조건에 맞는 기간이 없습니다.</div>
+            <div id="empty" class="empty" hidden>해당 조건에 맞는 지역이 없습니다.</div>
         </section>
     </main>
 
     <script src="../assets/js/app.js"></script>
-    <script src="../assets/js/cleandays.js"></script>
+    <script src="../assets/js/place_reco.js"></script>
 </body>
 </html>
