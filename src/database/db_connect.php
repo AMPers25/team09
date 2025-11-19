@@ -19,7 +19,7 @@ require_once __DIR__ . '/../config/db_config.php';
 function get_db_connection(): PDO
 {
     // Data Source Name 설정
-    $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+    $dsn = 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4';
 
     // PDO 옵션 설정 (보안 및 에러 처리 설정 포함)
     $options = [
