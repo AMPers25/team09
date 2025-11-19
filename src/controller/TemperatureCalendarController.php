@@ -3,7 +3,7 @@
  * File: src/controller/TemperatureCalendarController.php
  * Author: 김연수 (sooooscode)
  * Description: 기능 2-2. 기온 캘린더 조회 Controller
- * Last Updated: 2025-11-16
+ * Last Updated: 2025-11-19
  */
 
 namespace App\Controller;
@@ -20,25 +20,17 @@ class TemperatureCalendarController {
     /**
      * 월/지역별 일일 평균기온 목록을 조회하고 JSON으로 응답합니다.
      *
-     * @param array $params 라우터로부터 전달받은 요청 파라미터 (regionCode, year, month)
+     * @param array $params 라우터로부터 전달받은 요청 파라미터 (regionCode, month)
      */
     public function getDailyCalendar(array $params) {
         // 1. 입력 파라미터 유효성 검증 및 추출
         $regionCode = $params['regionCode'] ?? null;
         // int로 형변환하고 유효성 검증을 위해 filter_var 사용
-        // NOTE: 이중 $ 오타를 수정했습니다.
-        $year = filter_var($params['year'] ?? null, FILTER_VALIDATE_INT);
         $month = filter_var($params['month'] ?? null, FILTER_VALIDATE_INT);
 
         // 필수 파라미터 누락 검사
-        if (!$regionCode || $year === false || $month === false) {
-            $this->sendErrorResponse(400, "잘못된 요청입니다. regionCode, year, month 파라미터를 확인해주세요.");
-            return;
-        }
-
-        // 연도 값 검사 (0 이하, 너무 큰 값 등 비정상적인 값 제외)
-        if ($year <= 0 ) {
-            $this->sendErrorResponse(400, "유효한 연도(year) 값이 아닙니다.");
+        if (!$regionCode || $month === false) {
+            $this->sendErrorResponse(400, "잘못된 요청입니다. regionCode, month 파라미터를 확인해주세요.");
             return;
         }
 
@@ -50,7 +42,7 @@ class TemperatureCalendarController {
 
         try {
             // 2. Model을 호출하여 데이터 조회
-            $dailyTemps = $this->model->getDailyAverageTemperature($regionCode, $year, $month);
+            $dailyTemps = $this->model->getDailyAverageTemperature($regionCode, 2024, $month);
 
             // 3. 성공 응답 전송
             $this->sendJsonResponse(200, [
