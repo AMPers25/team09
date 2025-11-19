@@ -61,8 +61,8 @@ return function (\App\Core\Router $router) {
 
     // 3-1) 최대 연속 클린데이 추천
     // URL: /api/recommend/air-quality/{regionCode}
-    $router->get('/api/recommend/air-quality/{regionCode}',
-        CleanDayController::class, 'getMaxConsecutiveCleanDays');
+    $router->get('/api/recommend/air-quality/{region_code}',
+        CleanDayController::class, 'getCleanStreakRankingAction');
 
     // 3-2) 여행 적합 기간 추천 (주간 Top 5)
     // URL: /api/recommend/best-period
