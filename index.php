@@ -12,8 +12,9 @@ use App\Core\Router;
 require_once __DIR__ . '/vendor/autoload.php';
 // 임시: Composer가 없다면 Router 클래스를 직접 로드
 //require_once __DIR__ . '/src/core/Router.php';
-// 임시: DB 연결
-// require_once __DIR__ . '/src/database/db_connect.php';
+
+// DB 연결
+require_once __DIR__ . '/config/db_config.php';
 
 // PHP 설정
 ini_set('display_errors', 1);
