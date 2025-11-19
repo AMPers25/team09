@@ -14,7 +14,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 //require_once __DIR__ . '/src/core/Router.php';
 
 // DB 연결
-require_once __DIR__ . '/config/db_config.php';
+require_once __DIR__ . '/src/database/db_connect.php';
 
 // PHP 설정
 ini_set('display_errors', 1);
