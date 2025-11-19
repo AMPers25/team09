@@ -37,7 +37,7 @@ class TemperatureCalendarController {
         }
 
         // 연도 값 검사 (0 이하, 너무 큰 값 등 비정상적인 값 제외)
-        if ($year <= 0 || $year > 9999) {
+        if ($year <= 0 ) {
             $this->sendErrorResponse(400, "유효한 연도(year) 값이 아닙니다.");
             return;
         }
