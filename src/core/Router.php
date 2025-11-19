@@ -52,6 +52,23 @@ class Router
         // 쿼리 스트링 제거 (실제 URI만 남김)
         $uri = strtok($uri, '?');
 
+        // URI 정리 로직 추가
+        // XAMPP 환경에서 요청 URI에 포함된 '/프로젝트_폴더/index.php' 경로를 제거합니다.
+        $scriptName = $_SERVER['SCRIPT_NAME'];
+        $basePath = str_replace('/index.php', '', $scriptName);
+
+        // 1. URI에서 실행 스크립트 경로 제거 (예: /team09/index.php 제거)
+        $uri = str_replace($scriptName, '', $uri);
+
+        // 2. 프로젝트 폴더 경로가 남아있을 경우 제거 (예: /team09 제거)
+        $uri = str_replace($basePath, '', $uri);
+
+        // 3. URI의 시작 부분이 슬래시(/)로 시작하도록 보장
+        if (substr($uri, 0, 1) !== '/') {
+            $uri = '/' . $uri;
+        }
+
+
         foreach ($this->routes as $route) {
             if ($route['method'] !== $httpMethod) {
                 continue;

@@ -34,7 +34,7 @@ $router = new Router($db);
 
 // 3. 라우트 정의 파일 로드 및 등록
 // api.php 파일은 함수를 반환하며, 이 함수는 $router를 인자로 받아 라우트를 등록합니다.
-$routesLoader = require_once __DIR__ . '/routes/api.php';
+$routesLoader = require_once __DIR__ . '/route/api.php';
 
 // 반환된 함수($routesLoader)를 실행하면서 $router 객체를 인자로 넘겨줍니다.
 // 이렇게 하면 $router 변수가 api.php 파일 내부의 스코프로 전달되어 "Undefined variable: $router" 오류가 해결됩니다.
