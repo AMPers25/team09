@@ -18,7 +18,7 @@ class BestRegionController
     public function __construct(BestRegionModel $model) {
         $this->model = $model;
     }
-    // JSON 성공 응답을 보내는 헬퍼 함수 (Mocking 가능하도록 protected 유지)
+
     protected function sendResponse(int $status, string $message, array $data)
     {
         header('Content-Type: application/json');

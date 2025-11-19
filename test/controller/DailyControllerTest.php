@@ -1,20 +1,20 @@
 <?php
 /**
- * File: test/controller/WeatherDailyControllerTest.php
+ * File: test/controller/DailyControllerTest.php
  * Author: 강한나
  * Description: 일일 날씨 통합 조회 Controller 테스트
  * Last Updated: 2025-11-17
  */
 
 require_once __DIR__ . '/../../vendor/autoload.php';
-require_once __DIR__ . '/../../src/controller/WeatherDailyController.php';
-require_once __DIR__ . '/../../src/model/WeatherDailyModel.php';
+require_once __DIR__ . '/../../src/controller/DailyController.php';
+require_once __DIR__ . '/../../src/model/DailyModel.php';
 
 use PHPUnit\Framework\TestCase;
-use App\Model\WeatherDailyModel;
-use App\Controller\WeatherDailyController;
+use App\Model\DailyModel;
+use App\Controller\DailyController;
 
-class WeatherDailyControllerTest extends TestCase
+class DailyControllerTest extends TestCase
 {
     /** @var int */
     private $outputBufferLevel;
@@ -63,14 +63,14 @@ class WeatherDailyControllerTest extends TestCase
         ];
 
         // Model Mocking
-        $modelMock = $this->createMock(WeatherDailyModel::class);
+        $modelMock = $this->createMock(DailyModel::class);
         $modelMock->expects($this->once())
             ->method('getDailyWeather')
             ->with($regionCode, $date)
             ->willReturn($mockData);
 
         // Controller Mocking
-        $controllerMock = $this->getMockBuilder(WeatherDailyController::class)
+        $controllerMock = $this->getMockBuilder(DailyController::class)
             ->setConstructorArgs([$this->createMock(\PDO::class)])
             ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidRegionCode', 'isValidDate', 'isValidJwtFromHeader', 'getModel'])
             ->getMock();
@@ -106,7 +106,7 @@ class WeatherDailyControllerTest extends TestCase
     {
         $_SERVER['REQUEST_METHOD'] = 'POST';
 
-        $controllerMock = $this->getMockBuilder(WeatherDailyController::class)
+        $controllerMock = $this->getMockBuilder(DailyController::class)
             ->setConstructorArgs([$this->createMock(\PDO::class)])
             ->onlyMethods(['sendResponse', 'sendErrorResponse'])
             ->getMock();
@@ -129,7 +129,7 @@ class WeatherDailyControllerTest extends TestCase
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
 
-        $controllerMock = $this->getMockBuilder(WeatherDailyController::class)
+        $controllerMock = $this->getMockBuilder(DailyController::class)
             ->setConstructorArgs([$this->createMock(\PDO::class)])
             ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidJwtFromHeader'])
             ->getMock();
@@ -155,7 +155,7 @@ class WeatherDailyControllerTest extends TestCase
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer valid_token';
 
-        $controllerMock = $this->getMockBuilder(WeatherDailyController::class)
+        $controllerMock = $this->getMockBuilder(DailyController::class)
             ->setConstructorArgs([$this->createMock(\PDO::class)])
             ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidJwtFromHeader'])
             ->getMock();
@@ -182,7 +182,7 @@ class WeatherDailyControllerTest extends TestCase
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer valid_token';
 
-        $controllerMock = $this->getMockBuilder(WeatherDailyController::class)
+        $controllerMock = $this->getMockBuilder(DailyController::class)
             ->setConstructorArgs([$this->createMock(\PDO::class)])
             ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidRegionCode', 'isValidDate', 'isValidJwtFromHeader'])
             ->getMock();
@@ -213,10 +213,10 @@ class WeatherDailyControllerTest extends TestCase
         $date = '2025-10-12';
 
         // Model이 null 반환
-        $modelMock = $this->createMock(WeatherDailyModel::class);
+        $modelMock = $this->createMock(DailyModel::class);
         $modelMock->method('getDailyWeather')->willReturn(null);
 
-        $controllerMock = $this->getMockBuilder(WeatherDailyController::class)
+        $controllerMock = $this->getMockBuilder(DailyController::class)
             ->setConstructorArgs([$this->createMock(\PDO::class)])
             ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidRegionCode', 'isValidDate', 'isValidJwtFromHeader', 'getModel'])
             ->getMock();
@@ -249,11 +249,11 @@ class WeatherDailyControllerTest extends TestCase
         $date = '2025-10-12';
 
         // Model이 Exception 던짐
-        $modelMock = $this->createMock(WeatherDailyModel::class);
+        $modelMock = $this->createMock(DailyModel::class);
         $modelMock->method('getDailyWeather')
             ->willThrowException(new \Exception('일일 날씨 데이터 조회 중 서버 내부 오류가 발생했습니다.'));
 
-        $controllerMock = $this->getMockBuilder(WeatherDailyController::class)
+        $controllerMock = $this->getMockBuilder(DailyController::class)
             ->setConstructorArgs([$this->createMock(\PDO::class)])
             ->onlyMethods(['sendResponse', 'sendErrorResponse', 'isValidRegionCode', 'isValidDate', 'isValidJwtFromHeader', 'getModel'])
             ->getMock();

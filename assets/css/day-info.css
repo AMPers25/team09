@@ -26,6 +26,24 @@ body {
     gap: 18px;
 }
 
+.header-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.header-right {
+    width: 60px; /* header-left와 균형 맞추기 */
+}
+
+.region-name {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
 .back-button {
     background: transparent;
     border: none;
@@ -157,6 +175,15 @@ body {
         flex-direction: column;
         gap: 18px;
         align-items: flex-start;
+    }
+
+    .header-center {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .region-name {
+        font-size: 1.3rem;
     }
 
     .summary-block {

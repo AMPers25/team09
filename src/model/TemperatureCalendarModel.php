@@ -28,7 +28,9 @@ class TemperatureCalendarModel {
         $sql = "
             SELECT
                 d.date_id,
-                t.avg_temp
+                t.avg_temp,
+                t.min_temp,
+                t.max_temp
             FROM
                 Temperature t
             JOIN
