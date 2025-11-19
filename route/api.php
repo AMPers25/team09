@@ -60,14 +60,14 @@ return function (\App\Core\Router $router) {
     //================================================================
 
     // 3-1) 최대 연속 클린데이 추천
-    // URL: /api/recommend/air-quality/{regionCode}
+    // URL: /api/recommend/air-quality/{region_code}
     $router->get('/api/recommend/air-quality/{region_code}',
         CleanDayController::class, 'getCleanStreakRankingAction');
 
     // 3-2) 여행 적합 기간 추천 (주간 Top 5)
-    // URL: /api/recommend/best-period
-    $router->get('/api/recommend/best-period',
-        BestPeriodController::class, 'getBestTravelPeriods');
+    // URL: /api/recommend/best-period/{region_code}
+    $router->get('/api/recommend/best-period/{region_code}',
+        BestPeriodController::class, 'getWeekRankingAction');
 
     // 3-3) 지역별 여행 적합 지역 추천 (Top 5)
     // URL: /api/recommend/best-region
