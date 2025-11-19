@@ -31,6 +31,7 @@ class DailyModel
         $sql = "
             SELECT
               r.region_code,
+              r.region_name,
               d.date_id,
               t.avg_temp, t.max_temp, t.min_temp, t.daily_temp_range,
               rn.daily_rainfall, rn.humidity, rn.wind_speed, rn.cloud_cover, rn.status_code,

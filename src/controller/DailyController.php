@@ -125,6 +125,7 @@ class DailyController
             // 6) 명세에 맞는 데이터 매핑
             $data = [
                 'region_code' => $row['region_code'],
+                'region_name' => $row['region_name'] ?? null,
                 'date_id'     => $row['date_id'],
                 'temperature' => [
                     'avg_temp'         => isset($row['avg_temp']) ? (float)$row['avg_temp'] : null,
