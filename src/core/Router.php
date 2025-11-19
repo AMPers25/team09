@@ -82,19 +82,20 @@ class Router
                 // 첫 번째 매치는 전체 URI이므로 제거
                 array_shift($matches);
 
-                // 1. Controller 인스턴스 생성 및 DB 연결 주입 (Dependency Injection)
+                // 1. Controller 이름에서 Model 이름을 추론하고 Model 인스턴스 생성
                 $controllerName = $route['controller'];
+                $modelName = str_replace('Controller', 'Model', $controllerName);
+                if (!class_exists($modelName)) {
+                    http_response_code(500);
+                    echo json_encode(['status' => 'error', 'message' => "Model class not found: $modelName"]);
+                    return;
+                }
+                $modelInstance = new $modelName($this->dbConnection);
 
-                // 해당 Model 클래스를 자동으로 파악하여 주입한다고 가정 (복잡도 때문에 생략)
-                // 현재는 Controller의 생성자에 $dbConnection을 주입한다고 가정합니다.
-                $controllerInstance = new $controllerName($this->dbConnection);
+                // 3. Controller 인스턴스 생성 (Model 인스턴스 주입)
+                $controllerInstance = new $controllerName($modelInstance); // Model 인스턴스 주입
 
-                // 2. 파라미터 재구성 (URI에서 추출된 변수를 Controller 메소드로 전달)
-                // 여기서는 간단히 URI 추출 변수만 Controller에 전달한다고 가정합니다.
-                // 실제로는 Request 객체에서 GET/POST/URI 파라미터를 통합하여 전달합니다.
-
-                // 3. Controller 메소드 실행
-                // 💡 Reflection을 사용하여 메소드를 호출하고 URL 변수를 전달합니다.
+                // Reflection을 사용하여 메소드를 호출하고 URL 변수를 전달합니다.
                 try {
                     // $matches 배열은 Controller가 기대하는 파라미터 배열이 됩니다.
                     call_user_func_array([$controllerInstance, $route['action']], $matches);
