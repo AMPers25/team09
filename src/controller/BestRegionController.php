@@ -13,19 +13,11 @@ use App\Model\BestRegionModel;
 
 class BestRegionController
 {
-    private $dbConnection;
+    private $model;
 
-    public function __construct($dbConnection) {
-        $this->dbConnection = $dbConnection;
+    public function __construct(BestRegionModel $model) {
+        $this->model = $model;
     }
-
-    // Model 생성을 담당하는 헬퍼 함수 (Mocking 대상)
-    protected function getModel(): \App\Model\BestRegionModel
-    {
-        // Model 인스턴스 생성 로직
-        return new \App\Model\BestRegionModel($this->dbConnection);
-    }
-
     // JSON 성공 응답을 보내는 헬퍼 함수 (Mocking 가능하도록 protected 유지)
     protected function sendResponse(int $status, string $message, array $data)
     {
@@ -50,18 +42,18 @@ class BestRegionController
 
     /**
      * 기능 3-3 API 핸들러: 지역별 여행 적합 지역 추천 (Top 5)
-     * URL: GET /api/travel-index/region-ranking
+     * URL: GET /api/recommend/best-region/{start_date}/{end_date}
      */
-    public function getRegionRankingAction(array $queryParams)
+    public function getRegionRankingAction(array $params)
     {
         // 1. 필수 Query Parameter 검증
-        if (empty($queryParams['start_date']) || empty($queryParams['end_date'])) {
+        if (empty($params['start_date']) || empty($params['end_date'])) {
             $this->sendErrorResponse(400, "필수 데이터 (start_date, end_date)가 누락되었습니다.");
             return;
         }
 
-        $startDate = $queryParams['start_date'];
-        $endDate = $queryParams['end_date'];
+        $startDate = $params['start_date'];
+        $endDate = $params['end_date'];
 
         // 2. 입력값 형식 검증
         if (!$this->isValidDateFormat($startDate) || !$this->isValidDateFormat($endDate)) {
@@ -71,10 +63,8 @@ class BestRegionController
 
         // 3. Model 호출 및 데이터 가져오기
         try {
-            // **[수정]** Model 생성을 getModel() 헬퍼 함수로 변경!
-            $model = $this->getModel();
 
-            $results = $model->getBestRegionRanking($startDate, $endDate);
+            $results = $this->model->getBestRegionRanking($startDate, $endDate);
 
             if (empty($results)) {
                 $this->sendErrorResponse(404, "해당 기간의 지역 분석 데이터가 없습니다.");
@@ -89,5 +79,6 @@ class BestRegionController
             error_log("Controller Error for 3-3: " . $e->getMessage());
             $this->sendErrorResponse(500, "서버 내부 오류입니다.");
         }
+
     }
 }

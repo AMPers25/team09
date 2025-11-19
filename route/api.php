@@ -71,8 +71,8 @@ return function (\App\Core\Router $router) {
 
     // 3-3) 지역별 여행 적합 지역 추천 (Top 5)
     // URL: /api/recommend/best-region
-    $router->get('/api/recommend/best-region',
-        BestRegionController::class, 'getBestTravelRegions');
+    $router->get('/api/recommend/best-region/{start_date}/{end_date}',
+        BestRegionController::class, 'getRegionRankingAction');
 
 
     //================================================================
