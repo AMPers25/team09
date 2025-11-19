@@ -8,7 +8,7 @@
  */
 
 // 1. DB 설정 파일 로드
-require_once __DIR__ . '/../config/db_config.php';
+require_once __DIR__ . '/../../config/db_config.php';
 
 /**
  * 프로젝트 데이터베이스 연결 객체(PDO)를 생성하고 반환

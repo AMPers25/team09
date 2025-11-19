@@ -1,6 +1,6 @@
 <?php
 /**
- * File: test/model/WeatherDailyModelTest.php
+ * File: test/model/DailyModelTest.php
  * Author: 강한나
  * Description: 일일 날씨 통합 조회 Model 테스트
  * Last Updated: 2025-11-17
@@ -9,9 +9,9 @@
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 use PHPUnit\Framework\TestCase;
-use App\Model\WeatherDailyModel;
+use App\Model\DailyModel;
 
-class WeatherDailyModelTest extends TestCase
+class DailyModelTest extends TestCase
 {
     /**
      * @test
@@ -61,7 +61,7 @@ class WeatherDailyModelTest extends TestCase
             ->with($this->stringContains('FROM Region r'))
             ->willReturn($stmtMock);
 
-        $model = new WeatherDailyModel($dbMock);
+        $model = new DailyModel($dbMock);
 
         // 메소드 실행 및 결과 검증
         $actualResult = $model->getDailyWeather($regionCode, $date);
@@ -95,7 +95,7 @@ class WeatherDailyModelTest extends TestCase
             ->method('prepare')
             ->willReturn($stmtMock);
 
-        $model = new WeatherDailyModel($dbMock);
+        $model = new DailyModel($dbMock);
 
         // 메소드 실행 및 결과 검증
         $actualResult = $model->getDailyWeather($regionCode, $date);
@@ -117,7 +117,7 @@ class WeatherDailyModelTest extends TestCase
             ->method('prepare')
             ->willThrowException(new \PDOException('Simulated DB Connection Error'));
 
-        $model = new WeatherDailyModel($dbMock);
+        $model = new DailyModel($dbMock);
 
         // 예외 검증
         $this->expectException(\Exception::class);
@@ -149,7 +149,7 @@ class WeatherDailyModelTest extends TestCase
             ->method('prepare')
             ->willReturn($stmtMock);
 
-        $model = new WeatherDailyModel($dbMock);
+        $model = new DailyModel($dbMock);
 
         // 예외 검증
         $this->expectException(\Exception::class);

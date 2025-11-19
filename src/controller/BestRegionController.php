@@ -26,7 +26,7 @@ class BestRegionController
         return new \App\Model\BestRegionModel($this->dbConnection);
     }
 
-    // JSON 성공 응답을 보내는 헬퍼 함수 (Mocking 가능하도록 protected 유지)
+    // JSON 성공 응답을 보내는 헬퍼 함수 (Mocking 가능하도록 prot ected 유지)
     protected function sendResponse(int $status, string $message, array $data)
     {
         header('Content-Type: application/json');

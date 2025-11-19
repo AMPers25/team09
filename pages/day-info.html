@@ -11,20 +11,18 @@
         <div class="header-left">
             <button class="back-button" aria-label="이전 화면으로">←</button>
         </div>
-
+        <div class="header-center">
+            <h1 class="region-name" id="regionName">--</h1>
+        </div>
+        <div class="header-right"></div>
     </header>
 
     <main class="page-wrapper">
         <section class="summary-block">
             <img id="summaryIcon" class="summary-icon" src="./icons/clear.png" alt="날씨 아이콘">
             <div class="summary-details">
-
-                
-
-
                 <!-- API 연결 이후 -->
                 <!-- 아래의 디폴트 값 없애기 -->
-
                 <div class="summary-date" id="summaryDate">2024년 9월 17일</div>
                 <div class="summary-temp" id="summaryTemp">18° / 25°</div>
                 <span class="summary-condition" id="summaryCondition">맑음</span>
@@ -91,6 +89,7 @@
         }
 
         const detailElements = {
+            regionName: document.getElementById('regionName'),
             summaryIcon: document.getElementById('summaryIcon'),
             summaryDate: document.getElementById('summaryDate'),
             summaryTemp: document.getElementById('summaryTemp'),
@@ -118,7 +117,8 @@
                     date: dateParam
                 });
                 
-                const response = await fetch(`/api/day-info?${params.toString()}`, {
+                const apiUrl = '../api/day-info.php?' + params.toString();
+                const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -126,7 +126,9 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API 응답 오류: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.error || errorData.message || `API 응답 오류: ${response.status}`;
+                    throw new Error(errorMessage);
                 }
 
                 const data = await response.json();
@@ -163,6 +165,11 @@
         function applyDetailData(data) {
             if (!data) {
                 throw new Error('데이터가 없습니다.');
+            }
+
+            // 지역 이름 표시
+            if (data.regionName) {
+                detailElements.regionName.textContent = data.regionName;
             }
 
             // 날짜는 서버 데이터가 있으면 사용하고, 없으면 URL 파라미터의 날짜 사용
