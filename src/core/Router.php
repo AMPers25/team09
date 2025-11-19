@@ -95,10 +95,15 @@ class Router
                 // 3. Controller 인스턴스 생성 (Model 인스턴스 주입)
                 $controllerInstance = new $controllerName($modelInstance); // Model 인스턴스 주입
 
+                $paramKeys = ['regionCode', 'year', 'month']; // TCC의 getDailyCalendar 함수가 기대하는 순서
+
+                // $matches 배열의 요소 수만큼만 키를 사용합니다. (다른 라우트에도 적용 가능하도록)
+                $params = array_combine(array_slice($paramKeys, 0, count($matches)), $matches);
+
                 // Reflection을 사용하여 메소드를 호출하고 URL 변수를 전달합니다.
                 try {
                     // $matches 배열은 Controller가 기대하는 파라미터 배열이 됩니다.
-                    call_user_func_array([$controllerInstance, $route['action']], $matches);
+                    call_user_func_array([$controllerInstance, $route['action']], [$params]);
                     return;
 
                 } catch (\Exception $e) {
