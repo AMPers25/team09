@@ -102,6 +102,7 @@ class Router
                 // 2. 이름과 값을 결합하여 연관 배열($params) 생성
                 // $matches 배열의 요소 수만큼만 키를 사용합니다.
                 $params = array_combine(array_slice($paramKeys, 0, count($matches)), $matches);
+                $params['_route'] = $route['uri'];
 
 
                 // Reflection을 사용하여 메소드를 호출하고 URL 변수를 전달합니다.

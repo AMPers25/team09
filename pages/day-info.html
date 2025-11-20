@@ -117,7 +117,7 @@
                     date: dateParam
                 });
                 
-                const apiUrl = '../api/day-info.php?' + params.toString();
+                const apiUrl = `../api/day-info/${encodeURIComponent(regionCode)}/${encodeURIComponent(dateParam)}`;
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {

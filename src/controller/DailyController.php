@@ -2,9 +2,10 @@
 /**
  * File: src/controller/DailyController.php
  * Author: 강한나
- * Description: 특정 지역/날짜 일일 날씨 통합 조회 Controller
- * URL: GET /api/weather/daily
- * Last Updated: 2025-11-17
+ * Description:
+ *   - Route 1: GET /api/calendar/daily/{region_code}/{date}
+ *   - Route 2: GET /api/day-info/{region_code}/{date}
+ * Last Updated: 2025-11-20
  */
 
 namespace App\Controller;
@@ -13,22 +14,12 @@ use App\Model\DailyModel;
 
 class DailyController
 {
-    /** @var \PDO */
-    private $dbConnection;
+    private DailyModel $model;
 
-    public function __construct($dbConnection)
+    public function __construct(DailyModel $model)
     {
-        $this->dbConnection = $dbConnection;
+        $this->model = $model;
     }
-
-    /**
-     * Model 생성 헬퍼 (테스트 시 Mocking 용이)
-     */
-    protected function getModel(): DailyModel
-    {
-        return new DailyModel($this->dbConnection);
-    }
-
 
     /**
      * region_code 형식 검증: 숫자 3~5자리
@@ -52,139 +43,202 @@ class DailyController
     }
 
     /**
-     * JWT 토큰 간단 검증 (형식만)
-     * - Authorization: Bearer {JWT}
+     * 일일 날씨 통합 조회 (Router: /api/calendar/daily/{region_code}/{date})
      */
-    protected function isValidJwtFromHeader(): bool
+    public function getDailyWeather(array $params): void
     {
-        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+        $isDayInfo = $this->isDayInfoRoute($params);
+        $regionCode = $this->extractRegionCode($params);
+        $date = $this->extractDate($params);
 
-        if (empty($authHeader)) {
-            return false;
-        }
-
-        if (stripos($authHeader, 'Bearer ') !== 0) {
-            return false;
-        }
-
-        $token = trim(substr($authHeader, 7));
-        if ($token === '') {
-            return false;
-        }
-
-        // TODO: 실제 JWT 서명 검증 로직 추가
-        return true;
-    }
-
-    /**
-     * 일일 날씨 통합 조회 Action
-     *
-     * Method: GET
-     * URL: /api/weather/daily?region_code=090&date=2025-10-12
-     */
-    public function getDailyWeatherAction(array $queryParams): void
-    {
-        // 1) HTTP Method 체크
-        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
-            $this->sendErrorResponse(400, '잘못된 요청 형식입니다.');
+        if (!$regionCode || !$date) {
+            $this->respondError($isDayInfo, 400, '필수 파라미터(region_code, date)가 필요합니다.');
             return;
         }
 
-        // 2) JWT 검증
-        if (!$this->isValidJwtFromHeader()) {
-            $this->sendErrorResponse(401, '유효한 토큰이 필요합니다.');
-            return;
-        }
-
-        // 3) 필수 파라미터 검증
-        $regionCode = $queryParams['region_code'] ?? null;
-        $date       = $queryParams['date'] ?? null;
-
-        if (empty($regionCode) || empty($date)) {
-            $this->sendErrorResponse(400, '필수 데이터가 누락되었습니다.');
-            return;
-        }
-
-        // 4) 형식 검증
         if (!$this->isValidRegionCode($regionCode) || !$this->isValidDate($date)) {
-            $this->sendErrorResponse(400, '잘못된 데이터 형식입니다.');
+            $this->respondError($isDayInfo, 400, '잘못된 데이터 형식입니다.');
             return;
         }
 
         try {
-            // 5) Model 호출
-            $model = $this->getModel();
-            $row   = $model->getDailyWeather($regionCode, $date);
+            $row = $this->model->getDailyWeather($regionCode, $date);
 
             if ($row === null) {
-                // 404 - 데이터 없음
-                $this->sendErrorResponse(404, '해당 조건의 일일 날씨 데이터가 없습니다.');
+                $this->respondError($isDayInfo, 404, '해당 조건의 일일 날씨 데이터가 없습니다.');
                 return;
             }
 
-            // 6) 명세에 맞는 데이터 매핑
-            $data = [
-                'region_code' => $row['region_code'],
-                'region_name' => $row['region_name'] ?? null,
-                'date_id'     => $row['date_id'],
-                'temperature' => [
-                    'avg_temp'         => isset($row['avg_temp']) ? (float)$row['avg_temp'] : null,
-                    'max_temp'         => isset($row['max_temp']) ? (float)$row['max_temp'] : null,
-                    'min_temp'         => isset($row['min_temp']) ? (float)$row['min_temp'] : null,
-                    'daily_temp_range' => isset($row['daily_temp_range']) ? (float)$row['daily_temp_range'] : null,
-                ],
-                'rain' => [
-                    'daily_rainfall' => isset($row['daily_rainfall']) ? (float)$row['daily_rainfall'] : null,
-                    'humidity'       => isset($row['humidity']) ? (float)$row['humidity'] : null,
-                    'wind_speed'     => isset($row['wind_speed']) ? (float)$row['wind_speed'] : null,
-                    'cloud_cover'    => isset($row['cloud_cover']) ? (float)$row['cloud_cover'] : null,
-                    'status_code'    => isset($row['status_code']) ? (int)$row['status_code'] : null,
-                ],
-                'weather_alert' => [
-                    'alert_time' => $row['alert_time'] ?? null,
-                    'alert_type' => $row['alert_type'] ?? null,
-                ],
-                'air_quality' => [
-                    'pm10' => isset($row['pm10']) ? (float)$row['pm10'] : null,
-                ],
-            ];
+            $base = $this->buildBasePayload($row);
 
-            // 7) 성공 응답
-            $this->sendResponse(200, 'OK', $data);
+            if ($isDayInfo) {
+                $this->respondFrontend(200, $this->buildDayInfoPayload($base));
+            } else {
+                $this->respondApi(200, 'OK', $base);
+            }
 
         } catch (\Exception $e) {
-            error_log('Controller Error in getDailyWeatherAction: ' . $e->getMessage());
-            $this->sendErrorResponse(500, '서버 내부 오류입니다.');
+            error_log('Controller Error in getDailyWeather: ' . $e->getMessage());
+            $this->respondError($isDayInfo, 500, '서버 내부 오류입니다.');
         }
     }
 
-
-    /**
-     * JSON 성공 응답 헬퍼
-     */
-    protected function sendResponse(int $status, string $message, array $data): void
+    private function buildDayInfoPayload(array $base): array
     {
-        header('Content-Type: application/json');
-        http_response_code($status);
-        echo json_encode([
-            'status'  => $status,
-            'message' => $message,
-            'data'    => $data,
-        ], JSON_UNESCAPED_UNICODE);
+        $dateParts = explode('-', $base['date_id']);
+        $dateLabel = $dateParts[0] . '년 ' . (int)$dateParts[1] . '월 ' . (int)$dateParts[2] . '일';
+
+        $statusCodeMap = [
+            '90' => '맑음',
+            '91' => '구름조금',
+            '92' => '구름많음',
+            '93' => '흐림',
+            '01' => '비',
+            '05' => '눈'
+        ];
+        $statusCode = isset($base['rain']['status_code']) ? str_pad((string)$base['rain']['status_code'], 2, '0', STR_PAD_LEFT) : null;
+        $condition = $statusCodeMap[$statusCode] ?? '맑음';
+
+        return [
+            'regionName' => $base['region_name'] ?? '--',
+            'dateLabel' => $dateLabel,
+            'temperatureRange' => $this->formatRange($base['temperature']['min_temp'] ?? null, $base['temperature']['max_temp'] ?? null),
+            'condition' => $condition,
+            'icon' => null,
+            'temperature' => [
+                ['label' => '평균기온', 'value' => $this->formatDegree($base['temperature']['avg_temp'] ?? null)],
+                ['label' => '최고기온', 'value' => $this->formatDegree($base['temperature']['max_temp'] ?? null)],
+                ['label' => '최저기온', 'value' => $this->formatDegree($base['temperature']['min_temp'] ?? null)],
+                ['label' => '일교차', 'value' => $this->formatDegree($base['temperature']['daily_temp_range'] ?? null)],
+            ],
+            'rain' => [
+                ['label' => '일 강수량', 'value' => $this->formatNumber($base['rain']['daily_rainfall'] ?? null, 'mm')],
+                ['label' => '평균 습도', 'value' => $this->formatNumber($base['rain']['humidity'] ?? null, '%')],
+                ['label' => '평균 풍속', 'value' => $this->formatNumber($base['rain']['wind_speed'] ?? null, 'm/s')],
+                ['label' => '평균 운량', 'value' => $this->formatNumber($base['rain']['cloud_cover'] ?? null, '옥타')],
+            ],
+            'weatherAlert' => $this->buildAlert($base['weather_alert']),
+            'airQuality' => [
+                'title' => '미세먼지 (PM10)',
+                'value' => isset($base['air_quality']['pm10']) ? (string)(int)$base['air_quality']['pm10'] : null,
+                'meta' => []
+            ]
+        ];
     }
 
-    /**
-     * JSON 오류 응답 헬퍼
-     */
-    protected function sendErrorResponse(int $status, string $message): void
+
+    private function respondApi(int $statusCode, string $message, ?array $data = null): void
     {
-        header('Content-Type: application/json');
-        http_response_code($status);
-        echo json_encode([
-            'status'  => $status,
+        $payload = [
+            'status'  => $statusCode,
             'message' => $message,
-        ], JSON_UNESCAPED_UNICODE);
+        ];
+
+        if ($data !== null) {
+            $payload['data'] = $data;
+        }
+
+        $this->emitJson($statusCode, $payload);
+    }
+
+    private function respondError(bool $isDayInfo, int $statusCode, string $message): void
+    {
+        if ($isDayInfo) {
+            $this->respondFrontend($statusCode, ['error' => $message]);
+        } else {
+            $this->respondApi($statusCode, $message);
+        }
+    }
+
+    private function isDayInfoRoute(array $params): bool
+    {
+        return ($params['_route'] ?? '') === '/api/day-info/{region_code}/{date}';
+    }
+
+    private function respondFrontend(int $statusCode, array $payload): void
+    {
+        $this->emitJson($statusCode, $payload);
+    }
+
+    private function extractRegionCode(array $params): ?string
+    {
+        return $params['region_code'] ?? null;
+    }
+
+    private function extractDate(array $params): ?string
+    {
+        return $params['date'] ?? null;
+    }
+
+    private function buildBasePayload(array $row): array
+    {
+        return [
+            'region_code' => $row['region_code'],
+            'region_name' => $row['region_name'] ?? null,
+            'date_id'     => $row['date_id'],
+            'temperature' => [
+                'avg_temp'         => isset($row['avg_temp']) ? (float)$row['avg_temp'] : null,
+                'max_temp'         => isset($row['max_temp']) ? (float)$row['max_temp'] : null,
+                'min_temp'         => isset($row['min_temp']) ? (float)$row['min_temp'] : null,
+                'daily_temp_range' => isset($row['daily_temp_range']) ? (float)$row['daily_temp_range'] : null,
+            ],
+            'rain' => [
+                'daily_rainfall' => isset($row['daily_rainfall']) ? (float)$row['daily_rainfall'] : null,
+                'humidity'       => isset($row['humidity']) ? (float)$row['humidity'] : null,
+                'wind_speed'     => isset($row['wind_speed']) ? (float)$row['wind_speed'] : null,
+                'cloud_cover'    => isset($row['cloud_cover']) ? (float)$row['cloud_cover'] : null,
+                'status_code'    => isset($row['status_code']) ? (int)$row['status_code'] : null,
+            ],
+            'weather_alert' => [
+                'alert_time' => $row['alert_time'] ?? null,
+                'alert_type' => $row['alert_type'] ?? null,
+            ],
+            'air_quality' => [
+                'pm10' => isset($row['pm10']) ? (float)$row['pm10'] : null,
+            ],
+        ];
+    }
+
+    private function formatDegree(?float $value): string
+    {
+        return $value === null ? '--' : round($value, 1) . '°';
+    }
+
+    private function formatNumber(?float $value, string $unit): string
+    {
+        return $value === null ? '--' : round($value, 1) . $unit;
+    }
+
+    private function formatRange(?float $min, ?float $max): string
+    {
+        $minLabel = $min === null ? '--' : round($min, 1) . '°';
+        $maxLabel = $max === null ? '--' : round($max, 1) . '°';
+        return $minLabel . ' / ' . $maxLabel;
+    }
+
+    private function buildAlert(array $alert): array
+    {
+        if (empty($alert['alert_type']) && empty($alert['alert_time'])) {
+            return [];
+        }
+
+        return [[
+            'label' => $alert['alert_type'] ?? '기상특보',
+            'value' => $alert['alert_time'] ?? '--'
+        ]];
+    }
+
+    private function emitJson(int $statusCode, array $payload): void
+    {
+        if ($this->canSendHttpHeaders()) {
+            http_response_code($statusCode);
+            header('Content-Type: application/json');
+        }
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    }
+
+    private function canSendHttpHeaders(): bool
+    {
+        return PHP_SAPI !== 'cli' && !headers_sent();
     }
 }
-
-
