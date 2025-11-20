@@ -8,18 +8,19 @@
  */
 
 namespace App\Controller;
+use App\Model\BestPeriodModel;
 
 class BestPeriodController
 {
-    private $dbConnection;
+    private $model;
 
-    public function __construct($dbConnection) {
-        $this->dbConnection = $dbConnection;
+    public function __construct(BestPeriodModel $model) {
+        $this->model = $model;
     }
 
     /**
      * 기능 3-2 API 핸들러: 여행 적합 기간 추천 (주간 Top 5)
-     * URL: GET /api/travel-index/recommend-weeks
+     * URL: GET /api/recommend/best-period/{region_code}
      */
     public function getWeekRankingAction(array $queryParams)
     {
@@ -32,8 +33,7 @@ class BestPeriodController
 
         try {
             // BestPeriodModel 클래스를 사용
-            $model = new \App\Model\BestPeriodModel($this->dbConnection);
-            $results = $model->getBestWeekRanking($regionCode);
+            $results = $this->model->getBestWeekRanking($regionCode);
 
             if (empty($results)) {
                 $this->sendErrorResponse(404, "해당 지역의 2024년 주간 분석 데이터가 없습니다.");

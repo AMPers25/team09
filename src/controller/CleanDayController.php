@@ -13,17 +13,10 @@ use Exception; // 내장 Exception은 \Exception으로 처리합니다.
 
 class CleanDayController
 {
-    private $dbConnection;
+    private $model;
 
-    public function __construct($dbConnection) {
-        $this->dbConnection = $dbConnection;
-    }
-
-    // Model 생성을 담당하는 헬퍼 함수 (Controller 테스트에서 Mocking 대상)
-    protected function getModel(): \App\Model\CleanDayModel
-    {
-        // Model 인스턴스 생성 로직
-        return new \App\Model\CleanDayModel($this->dbConnection);
+    public function __construct(\App\Model\CleanDayModel $model) {
+        $this->model = $model;
     }
 
     /**
@@ -52,10 +45,10 @@ class CleanDayController
      * PM10 클린 기간 랭킹 요청 처리
      * GET /api/air-quality/clean-streak?region_code=SEOUL
      */
-    public function getCleanStreakRankingAction()
+    public function getCleanStreakRankingAction(array $params)
     {
         // 1. 요청에서 지역 코드(region_code) 가져오기
-        $regionCode = $_GET['region_code'] ?? null;
+        $regionCode = $params['region_code'] ?? null; // <-- $_GET 대신 $params 사용
 
         // 2. 입력값 유효성 검사
         if (empty($regionCode)) {
@@ -64,11 +57,9 @@ class CleanDayController
         }
 
         try {
-            // 3. Model 인스턴스 생성 및 DB 연결 주입 (getModel 헬퍼 함수 사용)
-            $model = $this->getModel();
 
             // 4. Model 메소드 호출 (핵심 비즈니스 로직 실행)
-            $rankingData = $model->getCleanStreakRanking($regionCode);
+            $rankingData = $this->model->getCleanStreakRanking($regionCode);
 
             // 404 처리 (데이터가 없는 경우)
             if (empty($rankingData)) {
