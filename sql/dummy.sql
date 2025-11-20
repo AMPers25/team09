@@ -6,7 +6,8 @@
 -- '146'        '152'        '156'        '159'        '162'
 -- '168'        '184'        '232'        '239'        '283'
 
-
+-- DB 사용
+USE team09;
 
 -- Region 테이블의 popular_count 더미값
 UPDATE Region SET popular_count = FLOOR(RAND() * 1000)
