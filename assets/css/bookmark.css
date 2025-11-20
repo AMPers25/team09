@@ -1,0 +1,58 @@
+/* 즐겨찾기 페이지 스타일 */
+
+/* 상단 바 */
+.header--page > .container {
+  max-width: 100%;
+  margin: 0;           /* 중앙 배치 해제 */
+  padding-left: 24px;  /* 좌측 여백은 유지(원하는 값으로 조절) */
+}
+
+.fa-house {
+  font-size: 30px;
+  color: var(--text2);
+}
+.fa-house:hover { color: var(--main); }
+
+/* 카드 패널 */
+.card--panel{
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.bm-list{
+  list-style: none;
+  margin: 0;
+  padding: 20px;
+}
+
+.bm-item{
+  display: grid;
+  grid-template-columns: 48px 1fr 220px 72px;
+  align-items: center;   /* 세로 가운데 */
+  justify-content: flex-start;    /* 가로 왼쪽정렬 */
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--text3);
+}
+.bm-item:last-child{ border-bottom: none; }    /* 맨마지막 리스트 아이템 밑줄 없애기 */
+
+.bm-rank{ color: var(--text); text-align:right; padding-right:8px; }
+.bm-region{ color: var(--text); }
+.bm-range{ color: var(--text); }
+
+.btn-del{
+  background: var(--default);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.btn-del:hover{ filter: brightness(0.97); }
+.btn-del[disabled]{ opacity:.5; cursor:not-allowed; }
+
+.empty{
+  text-align: center;
+  color: var(--text2);
+  padding: 32px 0 8px;
+}

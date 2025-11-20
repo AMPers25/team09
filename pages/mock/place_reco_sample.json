@@ -1,0 +1,40 @@
+{
+  "ok": true,
+  "data": [
+    {
+      "region_code": "168",
+      "region_name": "여수",
+      "province": "전라남도",
+      "avg_ti_score": 92.4,
+      "rank": 1
+    },
+    {
+      "region_code": "184",
+      "region_name": "제주",
+      "province": null,
+      "avg_ti_score": 89.7,
+      "rank": 2
+    },
+    {
+      "region_code": "104",
+      "region_name": "북강릉",
+      "province": "강원도",
+      "avg_ti_score": 88.1,
+      "rank": 3
+    },
+    {
+      "region_code": "159",
+      "region_name": "부산",
+      "province": null,
+      "avg_ti_score": 85.5,
+      "rank": 4
+    },
+    {
+      "region_code": "131",
+      "region_name": "청주",
+      "province": "충청북도",
+      "avg_ti_score": 83.2,
+      "rank": 5
+    }
+  ]
+}

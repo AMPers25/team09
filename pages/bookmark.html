@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>즐겨찾기</title>
+  <link rel="stylesheet" href="../assets/css/common.css" />
+  <link rel="stylesheet" href="../assets/css/bookmark.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- 상단 헤더 -->
+  <header class="header-base header--page">
+    <div class="container" style="display:flex;align-items:center;justify-content: flex-start;gap:16px;">
+      <a class="go-home" href="index.html" aria-label="홈으로">
+        <!--홈 아이콘-->
+        <i class="fa-solid fa-house"></i>   
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1 style="margin: 0 0 20px;">즐겨찾기 목록</h1>
+    <section class="card card--panel">
+      <ul id="bmList" class="bm-list" aria-live="polite">
+        <!-- JS가 렌더링 -->
+      </ul>
+      <div id="empty" class="empty" hidden>저장된 즐겨찾기가 없습니다.</div>
+    </section>
+  </main>
+
+  <script src="../assets/js/app.js"></script>
+  <script src="../assets/js/bookmark.js"></script>
+</body>
+</html>
+

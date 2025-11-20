@@ -39,6 +39,10 @@ button, input, select, textarea {
   padding: 0 24px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
+.header--page{
+  height: 60px;
+  display: flex;               /* header-base 에서 상속받는 flex를 명시 */
+}
 
 /* 작은 화면에서 좌우 간격 보호 */
 @media (max-width: 960px){

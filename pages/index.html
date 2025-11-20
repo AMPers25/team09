@@ -7,6 +7,7 @@
 
     <link rel="stylesheet" href="../assets/css/common.css" />
     <link rel="stylesheet" href="../assets/css/home.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
@@ -24,20 +25,37 @@
     <!-- 입력 패널 -->
      <section class="input-panel">
         <div class="row">
-            <div class="field">
+            <!-- 왼쪽: 지역 선택 -->
+            <div class="field field-region">
                 <select id="region">
                     <option value="" disabled selected>지역 선택</option>
                     <option value="108">서울특별시</option>
                     <option value="159">부산광역시</option>
                 </select>
             </div>
-            <div class="field">
-                <input type="date" placeholder="시작 날짜">
-            </div>
-            <div class="tilde">~</div>
-            <div class="field">
-                <input type="date" placeholder="종료 날짜">
-            </div>
+            <!-- 오른쪽: 날짜 그룹 -->
+             <div class="date-group">
+                <div class="field">
+                    <input 
+                    type="date" 
+                    id="start"
+                    placeholder="시작 날짜"
+                    min="2024-01-01"
+                    max="2024-12-31"
+                    >
+                </div>
+                <div class="tilde">~</div>
+                <div class="field">
+                    <input 
+                    type="date"
+                    id="end" 
+                    placeholder="종료 날짜"
+                    min="2024-01-01"
+                    max="2024-12-31"
+                    >
+                </div>
+             </div>
+            
         </div>
      </section>
 
@@ -46,33 +64,36 @@
         <article class="card">
             <h3>월별 날씨 정보 조회</h3>
             <button id="btnCalendar" class="btn" disabled>
-                <span class="icon">🔍</span> 검색
+                <i class="fa-solid fa-magnifying-glass"></i> 
+                <span>검색</span>
             </button>
         </article>
 
         <article class="card">
             <h3>여행 갈 날짜 추천</h3>
             <button id="btnDateReco" class="btn" disabled>
-                <span class="icon">🔍</span> 검색
+                <i class="fa-solid fa-magnifying-glass"></i> 
+                <span>검색</span>
             </button>
         </article>
 
         <article class="card">
             <h3>여행 갈 장소 추천</h3>
             <button id="btnPlaceReco" class="btn" disabled>
-                <span class="icon">🔍</span> 검색
+                <i class="fa-solid fa-magnifying-glass"></i> 
+                <span>검색</span>
             </button>
         </article>
      </section>
 
     <!-- 인기 조회 지역 + 즐겨찾기 -->
      <section class="flex" style="margin-top:20px;">
-        <article class="card card--sb">
-            <h3 style="margin-top:0;">인기 조회 지역 ⭐</h3>  <!--big을 안쓰네?-->
+        <article class="card--sb">
+            <h3 style="margin-top:0;">⭐  인기 조회 지역 </h3>  
             <ol id="popularList" class="rank"></ol>
         </article>
 
-        <button id="btnFavorites" class="btn" disabled>
+        <button id="btnFavorites" class="btn">
             <span class="icon">⭐</span> <span class="u_underline">즐겨찾기 보러가기</span>
         </button>
      </section>
@@ -80,7 +101,7 @@
 </main>
 
 <!-- 공통/홈 스크립트 -->
-<script src="js/app.js"></script>
-<script src="js/home.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/home.js"></script>
 </body>
 </html>
