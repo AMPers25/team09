@@ -52,11 +52,12 @@ DROP TABLE IF EXISTS `Bookmark`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Bookmark` (
   `bookmark_id` int NOT NULL AUTO_INCREMENT COMMENT 'PK. 즐겨찾기 ID',
+  `session_id` varchar(255) NOT NULL COMMENT '익명 사용자 식별자 (PHP 세션 ID)',
   `region_code` char(5) NOT NULL COMMENT 'Region 테이블의 FK. 즐겨찾기 지역 코드',
   `start_date` date NOT NULL COMMENT 'DateDim 테이블의 FK. 즐겨찾기 시작 날짜',
   `end_date` date NOT NULL COMMENT 'DateDim 테이블의 FK. 즐겨찾기 종료 날짜',
   PRIMARY KEY (`bookmark_id`),
-  UNIQUE KEY `uk_bookmark` (`region_code`,`start_date`,`end_date`),
+  UNIQUE KEY `uk_bookmark` (`session_id`, `region_code`,`start_date`,`end_date`),
   KEY `start_date` (`start_date`),
   KEY `end_date` (`end_date`),
   CONSTRAINT `bookmark_ibfk_1` FOREIGN KEY (`region_code`) REFERENCES `Region` (`region_code`) ON DELETE CASCADE ON UPDATE CASCADE,
