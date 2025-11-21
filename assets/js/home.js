@@ -1,6 +1,7 @@
 // 홈 전용 스크립트
 
 (async function initHome(){
+  
   // 1) 엘리먼트 참조 (id가 없을 수도 있으므로 fallback 포함)
   const $region = qs('#region');
   const $start  = qs('#start') || qs('input[type="date"][placeholder="시작 날짜"]');
@@ -92,27 +93,27 @@
     }
   }
 
-  // 3) 인기 조회 지역 Top5 (있으면 표시)
+  // 3) 인기 조회 지역 Top5 (실제 API 연동)
   const $popularList = qs('#popularList');
   if ($popularList) {
-    try{
-      const popularJson = await fetchJson('mock/popular_regions.json');
-      const regions = await fetchJson('mock/regions_20.json'); // 이름 조인용
-      const regionMap = Object.fromEntries(regions.map(r => [r.code, r]));
+    try {
+      // 실제 API 호출
+      const res = await fetchJson('/api/regions/popular');
 
-      // {ok:true, data:[...]} 구조이므로 .data 사용
-      const popularArr = popularJson.data || popularJson;
-      const top5 = popularArr.slice(0, 5);
+      const list = res.data || [];
+      if (list.length === 0) {
+        $popularList.innerHTML = `<li>데이터가 없습니다.</li>`;
+      } else {
+        $popularList.innerHTML = list
+          .map(item => `
+            <li>${item.rank}. ${item.region_name} </li>
+        ` )
+          .join('');
+      }
 
-      // 지역코드 → 지역이름 변환
-      $popularList.innerHTML = top5.map(r => {
-        const info = regionMap[r.region_code] || {};
-        const name = info.province ? `${info.province} ${info.name}` : info.name || r.region_code;
-        return `<li>${name} (${r.popular_count})</li>`;
-      }).join('');
-    } catch (e) {
-      console.error('⚠️ 인기지역 로드 실패:', e);
-      $popularList.innerHTML = `<li>데이터가 없습니다.</li>`;
+    } catch (err) {
+      console.error('⚠️ 인기지역 API 오류:', err);
+      $popularList.innerHTML = `<li>데이터를 불러올 수 없습니다.</li>`;
     }
   }
 
@@ -157,7 +158,7 @@
       params.set('year', y);
       params.set('month', m);
 
-      location.href = `calendar_temp.html?${params.toString()}`;        // 한나님이 정하신 파일 이름으로 수정!!!!!!!!!!!!
+      location.href = `temp-calendar.html?${params.toString()}`;        
     });
   }
 
