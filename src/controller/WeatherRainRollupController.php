@@ -3,95 +3,83 @@
  * File: src/controller/WeatherRainRollupController.php
  * Author: 황혜린
  * Description: 기능 2-3. 특정 지역/기간의 일별 강수량 + 월 합계(ROLLUP) 조회 Controller
- * Last Updated: 2025-11-17
+ * Last Updated: 2025-11-21
  */
 
 namespace App\Controller;
 
+use App\Model\WeatherRainRollupModel;
+
 class WeatherRainRollupController
 {
-    /** @var \PDO */
-    private $dbConnection;
+    /** @var WeatherRainRollupModel */
+    private WeatherRainRollupModel $model;
 
-    public function __construct($dbConnection)
+    public function __construct(WeatherRainRollupModel $model)
     {
-        $this->dbConnection = $dbConnection;
+        $this->model = $model;
     }
 
     /**
-     * GET /api/weather/rain-rollup?region_code=XXXXX&from=YYYY-MM-DD&to=YYYY-MM-DD
-     *
-     * Response:
-     * {
-     *   "status": 200,
-     *   "message": "OK",
-     *   "data": [
-     *     { "level": "DAY", "date_id": "2025-10-01", "ym": "2025-10", "rainfall_mm": 3.2 },
-     *     { "level": "DAY", "date_id": "2025-10-02", "ym": "2025-10", "rainfall_mm": 0.0 },
-     *     { "level": "MONTH_TOTAL", "date_id": null,  "ym": "2025-10", "rainfall_mm": 78.4 }
-     *   ]
-     * }
+     * GET /api/calendar/rain/{region_code}/{year}/{month}
+     *  - path params 로 받은 연/월을 이용해 [YYYY-MM-01 ~ YYYY-MM(마지막날)] 범위를 계산
+     *  - Model::getRainRollup(region, from, to) 재사용
      */
-    public function getRainRollupAction(array $queryParams = []): void
+    public function getRainRollupAction(array $params = []): void
     {
-        // 1) 필수 파라미터 검증
-        $regionCode = $queryParams['region_code'] ?? null;
-        $from       = $queryParams['from'] ?? null;
-        $to         = $queryParams['to'] ?? null;
+        $regionCode = $params['region_code'] ?? null;
+        $yearParam  = $params['year']        ?? null;
+        $monthParam = $params['month']       ?? null;
 
-        if (!$regionCode || !$from || !$to) {
-            $this->sendErrorResponse(400, "필수 데이터(region_code, from, to)가 누락되었습니다.");
+        // 1) 필수값 점검
+        if (!$regionCode || !$yearParam || !$monthParam) {
+            $this->sendErrorResponse(400, "필수 데이터(region_code, year, month)가 누락되었습니다.");
             return;
         }
 
-        // 간단한 형식 검증(YYYY-MM-DD)
-        if (!$this->isValidDate($from) || !$this->isValidDate($to)) {
-            $this->sendErrorResponse(400, "날짜 형식이 올바르지 않습니다. (YYYY-MM-DD)");
+        // 2) 형식/범위 검증
+        if (!preg_match('/^\d{3}$/', (string)$regionCode)) {
+            $this->sendErrorResponse(400, "region_code 형식이 올바르지 않습니다. (3자리)");
             return;
         }
+        if (!preg_match('/^\d{4}$/', (string)$yearParam)) {
+            $this->sendErrorResponse(400, "year 형식이 올바르지 않습니다. (YYYY)");
+            return;
+        }
+        if (!ctype_digit((string)$monthParam) || (int)$monthParam < 1 || (int)$monthParam > 12) {
+            $this->sendErrorResponse(400, "month 값이 올바르지 않습니다. (1~12)");
+            return;
+        }
+
+        $year  = (int)$yearParam;
+        $month = (int)$monthParam;
+
+        // 3) 월 범위 계산
+        $from = sprintf('%04d-%02d-01', $year, $month);
+        // 마지막 날: PHP로 안전하게 계산
+        $lastDay = (int)date('t', strtotime($from));
+        $to   = sprintf('%04d-%02d-%02d', $year, $month, $lastDay);
 
         try {
-            $model  = new \App\Model\WeatherRainRollupModel($this->dbConnection);
-            $result = $model->getRainRollup($regionCode, $from, $to);
-
-            $this->sendResponse(200, "OK", $result);
-
+            $rows = $this->model->getRainRollup($regionCode, $from, $to);
+            $this->sendResponse(200, 'OK', $rows);
         } catch (\Exception $e) {
             error_log("Controller Error in getRainRollupAction: " . $e->getMessage());
             $this->sendErrorResponse(500, "강수량 ROLLUP 조회 중 서버 내부 오류가 발생했습니다.");
         }
     }
 
-    private function isValidDate(string $yyyyMmDd): bool
-    {
-        // 간단한 포맷 체크 & 실제 날짜 검증
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $yyyyMmDd)) {
-            return false;
-        }
-        [$y, $m, $d] = explode('-', $yyyyMmDd);
-        return checkdate((int)$m, (int)$d, (int)$y);
-    }
-
-    /** 공통 성공 응답 */
     protected function sendResponse(int $status, string $message, array $data): void
     {
         header('Content-Type: application/json');
         http_response_code($status);
-        echo json_encode([
-            'status'  => $status,
-            'message' => $message,
-            'data'    => $data
-        ]);
+        echo json_encode(['status'=>$status,'message'=>$message,'data'=>$data]);
     }
 
-    /** 공통 오류 응답 */
     protected function sendErrorResponse(int $status, string $message): void
     {
         header('Content-Type: application/json');
         http_response_code($status);
-        echo json_encode([
-            'status'  => $status,
-            'message' => $message
-        ]);
+        echo json_encode(['status'=>$status,'message'=>$message]);
     }
 }

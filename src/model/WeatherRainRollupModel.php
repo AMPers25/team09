@@ -41,7 +41,7 @@ class WeatherRainRollupModel
                 CASE WHEN GROUPING(s.date_id) = 0 THEN 'DAY' ELSE 'MONTH_TOTAL' END AS level,
                 CASE WHEN GROUPING(s.date_id) = 0 THEN DATE_FORMAT(s.date_id, '%Y-%m-%d') ELSE NULL END AS date_id,
                 s.ym AS ym,
-                SUM(s.daily_rainfall) AS rainfall_mm
+                ROUND(SUM(s.daily_rainfall), 1) AS rainfall_mm
             FROM (
                 SELECT
                     region_code,
@@ -69,7 +69,9 @@ class WeatherRainRollupModel
             // 타입/키 정리 (rainfall_mm은 float로 캐스팅)
             foreach ($rows as &$r) {
                 // DB 드라이버에 따라 문자열로 올 수 있으니 안전하게 변환
-                $r['rainfall_mm'] = isset($r['rainfall_mm']) ? (float)$r['rainfall_mm'] : 0.0;
+                $r['rainfall_mm'] = isset($r['rainfall_mm'])
+                    ? (float) round((float)$r['rainfall_mm'], 1)
+                    : 0.0;
                 // level, date_id, ym 키 보장
                 $r['level']   = $r['level'] ?? 'DAY';
                 $r['date_id'] = $r['date_id'] ?? null;

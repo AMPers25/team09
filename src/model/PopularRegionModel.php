@@ -3,7 +3,7 @@
  * File: src/model/PopularRegionModel.php
  * Author: 황혜린
  * Description: 기능 1-2. 홈 인기 지역(popular_count 기준) 조회 Model
- * Last Updated: 2025-11-09
+ * Last Updated: 2025-11-21
  */
 
 namespace App\Model;
@@ -25,6 +25,7 @@ class PopularRegionModel
      *  - rank          : 1부터 시작하는 순위
      *  - region_code   : 지역 코드
      *  - region_name   : 지역명
+     *  - province      : 광역자치단체명 (없으면 NULL)
      *  - popular_count : 즐겨찾기 누적 횟수
      *
      * @param int $limit 최대 조회 개수 (기본 10)
@@ -33,23 +34,30 @@ class PopularRegionModel
      */
     public function getPopularRegions(int $limit = 10): array
     {
+        // 1) 안전 범위 클램핑
+        $limit = max(1, min(100, (int)$limit));
+
+        // 2) SQL은 단순 상위 N개만
         $sql = "
-            SELECT
-                ROW_NUMBER() OVER (ORDER BY popular_count DESC, region_name ASC) AS rank,
-                region_code,
-                region_name,
-                popular_count
+            SELECT region_code, region_name, province, popular_count
             FROM Region
             ORDER BY popular_count DESC, region_name ASC
-            LIMIT :limit
+            LIMIT $limit
         ";
 
         try {
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
-            $stmt->execute();
+            $stmt = $this->db->query($sql);
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
 
-            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            // 3) PHP에서 rank 부여 (1..N)
+            $rank = 1;
+            foreach ($rows as &$r) {
+                $r['rank'] = $rank++;
+                $r['popular_count'] = (int)$r['popular_count'];
+            }
+            unset($r);
+
+            return $rows;
 
         } catch (\PDOException $e) {
             error_log('DB Error in getPopularRegions: ' . $e->getMessage());
