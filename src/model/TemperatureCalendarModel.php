@@ -37,7 +37,7 @@ class TemperatureCalendarModel {
                 DateDim d ON t.date_id = d.date_id
             WHERE
                 t.region_code = :regionCode
-                AND d.year = :year  -- YEAR(d.date_id) 대신 d.year 컬럼 사용
+                AND YEAR(d.date_id) = 2024
                 AND d.month = :month
             ORDER BY
                 d.date_id ASC;
@@ -53,7 +53,6 @@ class TemperatureCalendarModel {
 
             $stmt = $this->db->prepare($cleanSql);
             $stmt->bindParam(':regionCode', $regionCode, \PDO::PARAM_STR);
-            $stmt->bindParam(':year', $year, \PDO::PARAM_INT);   // 연도 바인딩
             $stmt->bindParam(':month', $month, \PDO::PARAM_INT); // 월 바인딩
 
             $stmt->execute();

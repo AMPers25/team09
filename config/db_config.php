@@ -11,13 +11,16 @@
 // macOS XAMPP에서는 localhost 대신 127.0.0.1 사용 권장
 define("DB_HOST", "127.0.0.1"); // XAMPP 환경의 기본값
 
-// 2. 데이터베이스 사용자 ID (예: team09)
+// 2. 데이터베이스 사용자 ID
 define("DB_USER", "team09");
 
-// 3. 데이터베이스 비밀번호 (예: team09)
+// 3. 데이터베이스 비밀번호
 define("DB_PASS", "team09");
 
-// 4. 데이터베이스 이름 (예: team09)
+// 4. 데이터베이스 이름
 define("DB_NAME", "team09");
+
+// 5. 데이터베이스 포트
+define("DB_PORT", "3306");
 
 ?>
