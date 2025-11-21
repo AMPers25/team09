@@ -1,7 +1,6 @@
 // 홈 전용 스크립트
 
 (async function initHome(){
-  const API_BASE = "http://localhost/team09/index.php";
   
   // 1) 엘리먼트 참조 (id가 없을 수도 있으므로 fallback 포함)
   const $region = qs('#region');
@@ -99,8 +98,7 @@
   if ($popularList) {
     try {
       // 실제 API 호출
-      const url = `${API_BASE}/api/regions/popular?limit=5`;
-      const res = await fetchJson(url.toString());
+      const res = await fetchJson('/api/regions/popular');
 
       const list = res.data || [];
       if (list.length === 0) {

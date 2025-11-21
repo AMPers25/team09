@@ -2,8 +2,6 @@
 (function(){
   const $  = (s, el=document)=>el.querySelector(s);
   const has = v => v!==undefined && v!==null && String(v).trim()!=='';
-  
-  const BASE_API = "http://localhost/team09/index.php";
 
   // 공통 fetchJson(app.js) 사용. 없으면 폴백.
   const fetchJson = window.fetchJson || (async url=>{
@@ -17,27 +15,11 @@
   // -------------------------------
   const params = new URLSearchParams(location.search);
   const region = params.get('region') || '';
-  const start  = params.get('start')  || '';
-  const end    = params.get('end')    || '';
 
   // -------------------------------
   // 2) 상단 컨트롤 바 채우기
   // -------------------------------
   const $region = $('#region');
-  const $start  = $('#start');
-  const $end    = $('#end');
-
-  const MIN_DATE = '2024-01-01';
-  const MAX_DATE = '2024-12-31';
-
-  if ($start) {
-    $start.min = MIN_DATE;
-    $start.max = MAX_DATE;
-  }
-  if ($end) {
-    $end.min = MIN_DATE;
-    $end.max = MAX_DATE;
-  }
 
   async function fillRegions(){
     // placeholder 남겨두고 뒤에 붙이기
@@ -52,41 +34,10 @@
     if (has(region)) $region.value = region;
   }
 
-  function setDates(){
-    // 1) 먼저 쿼리스트링 값 있으면 반영
-    if ($start && has(start)) $start.value = start;
-    if ($end   && has(end))   $end.value   = end;
-
-    // 2) 둘 다 비어있으면 → 2024년 오늘 날짜 기준으로 기본값 세팅
-    if (!($start && $end)) return;
-    const hasStart = has($start.value);
-    const hasEnd   = has($end.value);
-    if (hasStart || hasEnd) return;  // 하나라도 이미 값 있으면 건드리지 않음
-
-    const now = new Date();  // 오늘 (예: 2025-11-18)
-    // 2024년 + 현재 월/일로 치환
-    let base = new Date(2024, now.getMonth(), now.getDate());
-
-    const min = new Date(MIN_DATE);
-    const max = new Date(MAX_DATE);
-    if (base < min) base = min;
-    if (base > max) base = max;
-
-    const yyyy = base.getFullYear();
-    const mm   = String(base.getMonth()+1).padStart(2,'0');
-    const dd   = String(base.getDate()).padStart(2,'0');
-    const baseStr = `${yyyy}-${mm}-${dd}`;
-
-    $start.value = baseStr;
-    $end.value   = baseStr;
-  }
-
 
   function reloadWith(next){
     const q = new URLSearchParams({
-      region: next.region || $region.value || '',
-      start : next.start  || $start.value  || '',
-      end   : next.end    || $end.value    || ''
+      region: next.region || $region.value || ''
     });
     location.href = `cleandays.html?${q.toString()}`;
   }
@@ -107,13 +58,9 @@
 
   btn.addEventListener('click', ()=>{
     const r = document.querySelector('#region')?.value;
-    const s = document.querySelector('#start')?.value;
-    const e = document.querySelector('#end')?.value;
 
     const params = new URLSearchParams();
     if (r) params.set('region', r);
-    if (s) params.set('start', s);
-    if (e) params.set('end',   e);
 
     // 실제 파일명에 맞게 수정
     location.href = `date_reco.html?${params.toString()}`;
@@ -122,7 +69,7 @@
 
   // -------------------------------
   // 3) 데이터 로드
-  //    API: GET /api/air-quality/best-period?region=&start=&end=
+  //    API: GET /api/recommend/air-quality/{region_code}
   //    응답: { status, message, data:[{rank,start_date,end_date,streak_days,pm10_avg}] }
   //    실패 시 mock 사용 (../pages/mock/clean_days_샘플.json)
   // -------------------------------
@@ -130,11 +77,10 @@
     let rows = [];
     try{
       const regionCode = $region.value;  // 예: 108
-    if (!regionCode) return [];
+      if (!regionCode) return [];
 
-    const url = `${BASE_API}/api/recommend/air-quality/${regionCode}`;
+      const res = await fetchJson(`/api/recommend/air-quality/${regionCode}`);
 
-      const res = await fetchJson(url.toString());
       rows = res.data || [];
 
     }catch(e){
@@ -223,12 +169,12 @@
 
       try {
         // /api/bookmarks?region_code=...&start_date=...&end_date=...
-        const url = new URL(`${API_BASE}/api/bookmarks`);
+        const url = new URL(`/api/bookmarks`);
         url.searchParams.set('region_code', regionCode);
         url.searchParams.set('start_date', start);
         url.searchParams.set('end_date',   end);
 
-        const res = await fetch(url.toString(), { method: 'DELETE' });
+        const res = await fetchJson(url.toString(), { method: 'DELETE' });
         if (!res.ok) throw new Error('delete failed');
 
         // (선택) mock 로컬스토리지에도 저장해뒀다면 같이 제거
@@ -261,7 +207,7 @@
     };
 
     try{
-      const r = await fetch(`${API_BASE}/api/bookmarks`, {
+      const r = await fetchJson(`/api/bookmarks`, {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify(payload)
@@ -293,7 +239,6 @@
   // -------------------------------
   (async function start(){
     await fillRegions();
-    setDates();
     bindGoButton();
 
     const rows = await loadData();

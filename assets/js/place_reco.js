@@ -3,8 +3,6 @@
   const $  = (s, el=document)=>el.querySelector(s);
   const has = v => v!==undefined && v!==null && String(v).trim()!=='';
 
-  const API_BASE = "http://localhost/team09/index.php";
-
   // 공통 fetchJson(app.js) 사용. 없으면 폴백.
   const fetchJson = window.fetchJson || (async url=>{
     const r = await fetch(url, { headers:{'Accept':'application/json'} });
@@ -94,12 +92,10 @@
   async function loadData() {
     let rows = [];
     try {
-      // 백엔드에서 주는 실제 엔드포인트로 맞춰야 함
-      const u = `${API_BASE}/api/recommend/best-region`;
-      if ($start && has($start.value)) u.searchParams.set("start", $start.value);
-      if ($end && has($end.value)) u.searchParams.set("end", $end.value);
+      const start_date = $start.value;
+      const end_date = $end.value;
 
-      const res = await fetchJson(u.toString());
+      const res = await fetchJson(`/api/recommend/best-region/${start_date}/${end_date}`);
       rows = res.data || [];
     } catch (e) {
       try {
