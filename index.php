@@ -2,7 +2,8 @@
 /**
  * File: index.php
  * Author: Yeonsu Kim (Backend Developer)
- * Date: 2025-11-08
+ * Date: 2025-11-19
+ * Update: 2025-11-21
  * Role: 중앙 집중식 요청 처리 및 라우팅 진입점
  */
 
@@ -19,6 +20,17 @@ require_once __DIR__ . '/src/database/db_connect.php';
 // PHP 설정
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
+
+// PHP 세션
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// 익명 사용자 ID 설정: 세션에 user_id가 없으면 고유 세션 ID로 초기화
+// 북마크 Model에서 이 값을 session_id로 사용합니다.
+if (!isset($_SESSION['user_id'])) {
+    $_SESSION['user_id'] = session_id();
+}
 
 // 1. DB 연결 객체 생성
 $db = null;
