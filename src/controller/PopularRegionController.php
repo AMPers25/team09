@@ -3,54 +3,45 @@
  * File: src/controller/PopularRegionController.php
  * Author: 황혜린
  * Description: 기능 1-2. 홈 인기 지역(popular_count 기준) 조회 Controller
- * Last Updated: 2025-11-09
+ * Last Updated: 2025-11-21
  */
 
 namespace App\Controller;
 
+use App\Model\PopularRegionModel;
+
 class PopularRegionController
 {
-    /** @var \PDO */
-    private $dbConnection;
+    /** @var PopularRegionModel */
+    private PopularRegionModel $model;
 
-    public function __construct($dbConnection)
+    public function __construct(PopularRegionModel $model)
     {
-        $this->dbConnection = $dbConnection;
+        $this->model = $model; // Router가 PopularRegionModel을 주입
     }
 
     /**
      * 인기 지역 목록 조회 API
      *
      * Method: GET
-     * URL 예시: GET /api/regions/popular?limit=10
+     * URL: /api/regions/popular?limit=10
      *
      * Response (200 OK):
      * {
      *   "status": 200,
      *   "message": "OK",
      *   "data": [
-     *     { "rank": 1, "region_code": "011", "region_name": "서울시", "popular_count": 128 },
-     *     { "rank": 2, "region_code": "012", "region_name": "강릉시", "popular_count": 97 }
+     *     { "rank": 1, "region_code": "011", "region_name": "강남구", "province": "서울특별시", "popular_count": 128 },
+     *     { "rank": 2, "region_code": "012", "region_name": "서초구", "province": "서울특별시", "popular_count": 97 }
      *   ]
      * }
      */
     public function getPopularRegionsAction(array $queryParams = []): void
     {
-        // limit 파라미터 (선택, 기본 10, 최대 100)
-        $limit = 10;
-        if (isset($queryParams['limit']) && ctype_digit((string)$queryParams['limit'])) {
-            $limit = (int)$queryParams['limit'];
-            if ($limit <= 0) {
-                $limit = 10;
-            } elseif ($limit > 100) {
-                $limit = 100;
-            }
-        }
+        $limit = $this->sanitizeLimit($queryParams['limit'] ?? null);
 
         try {
-            $model = new \App\Model\PopularRegionModel($this->dbConnection);
-            $results = $model->getPopularRegions($limit);
-
+            $results = $this->model->getPopularRegions($limit);
             $this->sendResponse(200, 'OK', $results);
 
         } catch (\Exception $e) {
@@ -59,9 +50,16 @@ class PopularRegionController
         }
     }
 
-    /**
-     * JSON 성공 응답 헬퍼
-     */
+    /** limit 파라미터 기본값/상한 처리 */
+    private function sanitizeLimit($raw): int
+    {
+        if ($raw === null || !ctype_digit((string)$raw)) return 10;
+        $n = (int)$raw;
+        if ($n <= 0)   return 10;
+        if ($n > 100)  return 100;
+        return $n;
+    }
+
     protected function sendResponse(int $status, string $message, array $data): void
     {
         header('Content-Type: application/json');
@@ -73,9 +71,6 @@ class PopularRegionController
         ]);
     }
 
-    /**
-     * JSON 오류 응답 헬퍼
-     */
     protected function sendErrorResponse(int $status, string $message): void
     {
         header('Content-Type: application/json');
