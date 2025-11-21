@@ -3,6 +3,8 @@
   const $  = (s, el=document)=>el.querySelector(s);
   const has = v => v!==undefined && v!==null && String(v).trim()!=='';
 
+  const API_BASE = "http://localhost/team09/index.php";
+
   // 공통 fetchJson(app.js) 사용. 없으면 폴백.
   const fetchJson = window.fetchJson || (async url=>{
     const r = await fetch(url, { headers:{'Accept':'application/json'} });
@@ -75,9 +77,13 @@
     location.href = `place_reco.html?${q.toString()}`;
   }
 
-  function bindFilterEvents() {
-    if ($start) $start.addEventListener('change', reloadWith);
-    if ($end)   $end.addEventListener('change',   reloadWith);
+  function bindGoButton() {
+    const btn = document.querySelector("#goFilter");
+    if (!btn) return;
+
+    btn.addEventListener("click", () => {
+        reloadWith({});
+    });
   }
 
 
@@ -89,7 +95,7 @@
     let rows = [];
     try {
       // 백엔드에서 주는 실제 엔드포인트로 맞춰야 함
-      const u = new URL('/api/travel-index/region-ranking', location.origin);
+      const u = `${API_BASE}/api/recommend/best-region`;
       if ($start && has($start.value)) u.searchParams.set("start", $start.value);
       if ($end && has($end.value)) u.searchParams.set("end", $end.value);
 
@@ -182,7 +188,7 @@ async function onClickList(e){
 
         try {
             // B안: region_code + start_date + end_date로 삭제
-            const url = new URL('/api/bookmarks', location.origin);
+            const url = new URL(`${API_BASE}/api/bookmarks`);
             url.searchParams.set('region_code', regionCode);
             url.searchParams.set('start_date', startDate);
             url.searchParams.set('end_date',   endDate);
@@ -220,7 +226,7 @@ async function onClickList(e){
 
     try {
         // 즐겨찾기 추가 API (POST)
-        const r = await fetch('/api/bookmarks', {
+        const r = await fetch(`${API_BASE}/api/bookmarks`, {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify(payload)
@@ -250,7 +256,7 @@ async function onClickList(e){
   // -------------------------------
   (async function start(){
     setDates();
-    bindFilterEvents();
+    bindGoButton();
 
     const rows = await loadData();
     renderList(rows);

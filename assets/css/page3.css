@@ -21,6 +21,25 @@
   border-radius:5px; border:1px solid var(--line);
   background:var(--default); color:var(--text);
 }
+.go-btn {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #49a4d8b9;
+    color: #fff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.go-btn:hover {
+    background: #49a4d8b9;
+    transform: translateY(-1px);
+}
+
+.go-btn:active {
+    transform: translateY(0);
+}
 
 /* 제목 줄: 좌제목 · 우버튼 */
 .page-head{

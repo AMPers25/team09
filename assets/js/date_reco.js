@@ -3,6 +3,8 @@
   const $  = (s, el=document)=>el.querySelector(s);
   const has = v => v!==undefined && v!==null && String(v).trim()!=='';
 
+  const BASE_API = "http://localhost/team09/index.php";
+
   // 공통 fetchJson(app.js) 사용. 없으면 폴백.
   const fetchJson = window.fetchJson || (async url=>{
     const r = await fetch(url, { headers:{'Accept':'application/json'} });
@@ -82,11 +84,13 @@
   }
 
   // 변경 이벤트 → 즉시 리로드
-  function bindFilterEvents(){
-    $region.addEventListener('change', ()=>reloadWith({}));
-    $start.addEventListener('change',  ()=>reloadWith({}));
-    $end.addEventListener('change',    ()=>reloadWith({}));
-    
+  function bindGoButton() {
+    const btn = document.querySelector("#goFilter");
+    if (!btn) return;
+
+    btn.addEventListener("click", () => {
+        reloadWith({});
+    });
   }
   // 제목 오른쪽 버튼 → 3-1 페이지 이동
 (function(){
@@ -115,12 +119,13 @@
   async function loadData(){
     let rows = [];
     try{
-      const u = new URL('/api/air-quality/best-period', location.origin);          // 나중에 api 이름 맞게 수정!!!!!!!!!!!!1
-      if (has($region.value)) u.searchParams.set('region', $region.value);
-      if (has($start.value))  u.searchParams.set('start',  $start.value);
-      if (has($end.value))    u.searchParams.set('end',    $end.value);
-      const res = await fetchJson(u.toString());
-      rows = res.data || [];
+      const regionCode = $region.value;  // 예: 108
+    if (!regionCode) return [];
+
+    const url = `${BASE_API}/api/recommend/air-quality/${regionCode}`;
+
+    const res = await fetchJson(url);
+    rows = res.data || [];
     }catch(e){
       // mock 폴백 (파일명을 고정하거나, 필요하면 region코드에 맞춰 분기)
       try{
@@ -207,7 +212,7 @@
 
       try {
         // /api/bookmarks?region_code=...&start_date=...&end_date=...
-        const url = new URL('/api/bookmarks', location.origin);
+        const url = new URL(`${API_BASE}/api/bookmarks`);
         url.searchParams.set('region_code', regionCode);
         url.searchParams.set('start_date', start);
         url.searchParams.set('end_date',   end);
@@ -245,7 +250,7 @@
     };
 
     try{
-      const r = await fetch('/api/bookmarks', {
+      const r = await fetch(`${API_BASE}/api/bookmarks`, {
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify(payload)
@@ -277,7 +282,7 @@
   (async function start(){
     await fillRegions();
     setDates();
-    bindFilterEvents();
+    bindGoButton();
 
     const rows = await loadData();
     renderList(rows);

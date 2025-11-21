@@ -8,6 +8,8 @@
      return r.json();
     });
 
+    const API_BASE = "http://localhost/team09/index.php";
+
     // 간단한 JSON 요청(DELETE 등)
     async function apiJSON(method, url, body){
      const r = await fetch(url, {
@@ -71,7 +73,7 @@
     let data = [];
     try {
         // 계약: GET /api/bookmarks → { ok:true, data:[...] }
-        const res = await fetchJson('/api/bookmarks');
+        const res = await fetchJson(`${API_BASE}/api/bookmarks`);
         if (res && (res.ok ?? true) && Array.isArray(res.data)) {
            data = res.data;
         } else {
@@ -124,7 +126,7 @@
         try {
             if (has(id)) {
             // 계약: DELETE /api/bookmarks/:id  → {ok:true}
-            const res = await apiJSON('DELETE', `/api/bookmarks/${id}`);
+            const res = await apiJSON('DELETE', `${API_BASE}/api/bookmarks/${id}`);
             if (!(res && (res.ok ?? false))) {
                 throw new Error(res?.error || 'delete failed');
             }
