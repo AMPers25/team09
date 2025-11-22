@@ -15,10 +15,24 @@ class DailyController
 {
     /** @var \PDO */
     private $dbConnection;
+    
+    /** @var DailyModel|null */
+    private $model;
 
-    public function __construct($dbConnection)
+    /**
+     * 생성자: DB 연결 또는 Model 주입 지원
+     * - Router를 통한 호출: Model 주입
+     * - 직접 호출: DB 연결 주입
+     */
+    public function __construct($dbConnectionOrModel)
     {
-        $this->dbConnection = $dbConnection;
+        if ($dbConnectionOrModel instanceof DailyModel) {
+            // Router 패턴: Model 주입
+            $this->model = $dbConnectionOrModel;
+        } else {
+            // 기존 패턴: DB 연결 주입
+            $this->dbConnection = $dbConnectionOrModel;
+        }
     }
 
     /**
@@ -26,6 +40,9 @@ class DailyController
      */
     protected function getModel(): DailyModel
     {
+        if ($this->model !== null) {
+            return $this->model;
+        }
         return new DailyModel($this->dbConnection);
     }
 
@@ -90,8 +107,11 @@ class DailyController
             return;
         }
 
-        // 2) JWT 검증
-        if (!$this->isValidJwtFromHeader()) {
+        // 2) JWT 검증 (Router를 통한 /api/calendar/daily/ 경로는 우회)
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+        $isCalendarDailyPath = strpos($requestUri, '/api/calendar/daily/') !== false;
+        
+        if (!$isCalendarDailyPath && !$this->isValidJwtFromHeader()) {
             $this->sendErrorResponse(401, '유효한 토큰이 필요합니다.');
             return;
         }
@@ -139,6 +159,7 @@ class DailyController
                     'wind_speed'     => isset($row['wind_speed']) ? (float)$row['wind_speed'] : null,
                     'cloud_cover'    => isset($row['cloud_cover']) ? (float)$row['cloud_cover'] : null,
                     'status_code'    => isset($row['status_code']) ? (int)$row['status_code'] : null,
+                    'status_name'    => $row['status_name'] ?? null,
                 ],
                 'weather_alert' => [
                     'alert_time' => $row['alert_time'] ?? null,
@@ -157,7 +178,6 @@ class DailyController
             $this->sendErrorResponse(500, '서버 내부 오류입니다.');
         }
     }
-
 
     /**
      * JSON 성공 응답 헬퍼

@@ -112,12 +112,8 @@
             }
 
             try {
-                const params = new URLSearchParams({
-                    region_code: regionCode,
-                    date: dateParam
-                });
-                
-                const apiUrl = '../api/day-info.php?' + params.toString();
+                // 새로운 API 엔드포인트: /api/calendar/daily/{region_code}/{date}
+                const apiUrl = `/team09/api/calendar/daily/${regionCode}/${dateParam}`;
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
@@ -131,17 +127,13 @@
                     throw new Error(errorMessage);
                 }
 
-                const data = await response.json();
-                if (!data) {
+                const responseData = await response.json();
+                if (!responseData) {
                     throw new Error('API에서 데이터를 받지 못했습니다.');
                 }
 
-                // API 응답에 날짜가 없으면 URL 파라미터의 날짜 사용
-                if (!data.dateLabel && dateParam) {
-                    data.dateLabel = formatDateToKorean(dateParam);
-                }
-
-                return data;
+                // API 응답 형식: {status, message, data}
+                return responseData.data || responseData;
             } catch (error) {
                 console.error('API 호출 실패:', error);
                 throw error;
@@ -162,40 +154,73 @@
             element.classList.toggle('is-hidden', !hasContent);
         }
 
-        function applyDetailData(data) {
-            if (!data) {
+        function applyDetailData(apiData) {
+            if (!apiData) {
                 throw new Error('데이터가 없습니다.');
             }
 
+            // 날짜를 한국어 형식으로 변환
+            const dateParts = apiData.date_id ? apiData.date_id.split('-') : dateParam.split('-');
+            const dateLabel = `${dateParts[0]}년 ${parseInt(dateParts[1])}월 ${parseInt(dateParts[2])}일`;
+
+            // 날씨 상태 이름 사용
+            const condition = apiData.rain?.status_name || '맑음';
+
             // 지역 이름 표시
-            if (data.regionName) {
-                detailElements.regionName.textContent = data.regionName;
+            if (apiData.region_name) {
+                detailElements.regionName.textContent = apiData.region_name;
             }
 
-            // 날짜는 서버 데이터가 있으면 사용하고, 없으면 URL 파라미터의 날짜 사용
-            const displayDate = data.dateLabel || formatDateToKorean(dateParam);
-            detailElements.summaryDate.textContent = displayDate;
-            detailElements.summaryTemp.textContent = data.temperatureRange || '--';
-            detailElements.summaryCondition.textContent = data.condition || '--';
+            // 날짜 표시
+            detailElements.summaryDate.textContent = dateLabel;
+            detailElements.summaryTemp.textContent = `${apiData.temperature?.min_temp ?? '--'}° / ${apiData.temperature?.max_temp ?? '--'}°`;
+            detailElements.summaryCondition.textContent = condition;
 
-            const iconSrc = data.icon || WEATHER_ICON_MAP[data.condition] || WEATHER_ICON_MAP['맑음'];
+            const iconSrc = WEATHER_ICON_MAP[condition] || WEATHER_ICON_MAP['맑음'];
             detailElements.summaryIcon.src = iconSrc;
-            detailElements.summaryIcon.alt = data.condition || '날씨 아이콘';
+            detailElements.summaryIcon.alt = condition || '날씨 아이콘';
 
-            populateList(detailElements.temperatureList, data.temperature || []);
-            toggleBlock(detailElements.temperatureCard, (data.temperature || []).length > 0);
+            // 기온 데이터 변환
+            const temperature = [
+                { label: '평균기온', value: apiData.temperature?.avg_temp != null ? `${Math.round(apiData.temperature.avg_temp * 10) / 10}°` : '--' },
+                { label: '최고기온', value: apiData.temperature?.max_temp != null ? `${Math.round(apiData.temperature.max_temp * 10) / 10}°` : '--' },
+                { label: '최저기온', value: apiData.temperature?.min_temp != null ? `${Math.round(apiData.temperature.min_temp * 10) / 10}°` : '--' },
+                { label: '일교차', value: apiData.temperature?.daily_temp_range != null ? `${Math.round(apiData.temperature.daily_temp_range * 10) / 10}°` : '--' }
+            ];
+            populateList(detailElements.temperatureList, temperature);
+            toggleBlock(detailElements.temperatureCard, temperature.length > 0);
 
-            populateList(detailElements.rainList, data.rain || []);
-            toggleBlock(detailElements.rainCard, (data.rain || []).length > 0);
+            // 강수량 데이터 변환
+            const rain = [
+                { label: '일 강수량', value: apiData.rain?.daily_rainfall != null ? `${Math.round(apiData.rain.daily_rainfall * 10) / 10}mm` : '--' },
+                { label: '평균 습도', value: apiData.rain?.humidity != null ? `${Math.round(apiData.rain.humidity * 10) / 10}%` : '--' },
+                { label: '평균 풍속', value: apiData.rain?.wind_speed != null ? `${Math.round(apiData.rain.wind_speed * 10) / 10}m/s` : '--' },
+                { label: '평균 운량', value: apiData.rain?.cloud_cover != null ? `${Math.round(apiData.rain.cloud_cover * 10) / 10}옥타` : '--' }
+            ];
+            populateList(detailElements.rainList, rain);
+            toggleBlock(detailElements.rainCard, rain.length > 0);
 
-            populateList(detailElements.alertList, data.weatherAlert || []);
-            toggleBlock(detailElements.alertCard, (data.weatherAlert || []).length > 0);
+            // 경보 데이터 변환
+            const weatherAlert = [];
+            if (apiData.weather_alert?.alert_type) {
+                weatherAlert.push({
+                    label: apiData.weather_alert.alert_type,
+                    value: apiData.weather_alert.alert_time || '--'
+                });
+            }
+            populateList(detailElements.alertList, weatherAlert);
+            toggleBlock(detailElements.alertCard, weatherAlert.length > 0);
 
-            const air = data.airQuality;
-            if (air && (air.value != null || (air.meta && air.meta.length))) {
-                detailElements.airQualityTitle.textContent = air.title || 'Air Quality';
-                detailElements.airQualityValue.textContent = air.value ?? '--';
-                populateList(detailElements.airQualityMeta, air.meta || []);
+            // 미세먼지 데이터 변환
+            const airQuality = {
+                title: '미세먼지 농도 (PM 10)',
+                value: apiData.air_quality?.pm10 != null ? String(Math.round(apiData.air_quality.pm10)) : null,
+                meta: []
+            };
+            if (airQuality.value != null) {
+                detailElements.airQualityTitle.textContent = airQuality.title;
+                detailElements.airQualityValue.textContent = airQuality.value;
+                populateList(detailElements.airQualityMeta, airQuality.meta);
                 detailElements.airQualityCard.classList.remove('is-hidden');
             } else {
                 detailElements.airQualityCard.classList.add('is-hidden');
