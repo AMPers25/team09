@@ -37,11 +37,6 @@
                 <div class="calendar-controls">
                     <span class="year-display">2024년</span>
                     <button id="prevMonthBtn" class="nav-arrow" type="button" aria-label="이전 달" onclick="changeMonth(-1)">‹</button>
-
-
-                    <!-- API 연결 이후 -->
-                    <!-- 아래의 디폴트 값 없애기 -->
-
                     <span class="month-display" id="currentMonthDisplay">9월</span>
                     <button id="nextMonthBtn" class="nav-arrow" type="button" aria-label="다음 달" onclick="changeMonth(1)">›</button>
                 </div>
@@ -56,13 +51,6 @@
         </div>
     </div>
 
-    <!-- 서버에서 JSON을 주입할 수 있는 영역 -->
-    <!--
-    <script id="embeddedRainCalendarData" type="application/json">
-        { ... }
-    </script>
-    -->
-
     <script>
         const FIXED_YEAR = 2024;
 
@@ -74,7 +62,6 @@
             '비': './icons/rain.png',
             '눈': './icons/snow.png'
         };
-
 
         // URL 파라미터에서 region_code와 month 읽기
         const urlParams = new URLSearchParams(window.location.search);
@@ -89,7 +76,6 @@
         
         let currentDate = new Date(FIXED_YEAR, initialMonth, 1);
         let calendarData = null;
-        let currentTab = 'precipitation';
         let activeDayCell = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -195,7 +181,6 @@
                         // 같은 페이지면 탭만 변경
                         tabs.forEach(t => t.classList.remove('active'));
                         this.classList.add('active');
-                        currentTab = targetTab;
                     }
                 });
             });
@@ -290,6 +275,7 @@
             let validDaysCount = 0;
             let monthTotalRainfall = null;
             const weeklyAverages = [];
+            let regionName = null;
 
             // API 응답에서 DAY, WEEK_AVG, MONTH_TOTAL 레벨 데이터 분리
             apiData.forEach(item => {
@@ -302,8 +288,21 @@
                         avg_rainfall: item.rainfall_mm != null ? parseFloat(item.rainfall_mm) : 0
                     });
                 } else if (item.level === 'DAY' && item.date_id) {
+                    // region_name은 모든 항목에서 동일하므로 첫 번째 항목에서만 가져옴
+                    if (!regionName && item.region_name) {
+                        regionName = item.region_name;
+                    }
+
                     const dateParts = item.date_id.split('-');
+                    const itemYear = parseInt(dateParts[0], 10);
+                    const itemMonth = parseInt(dateParts[1], 10);
                     const day = parseInt(dateParts[2], 10);
+                    
+                    // 해당 월의 날짜만 포함 (전달/다음달 데이터 제외)
+                    if (itemYear !== year || itemMonth !== month) {
+                        return; // 해당 월이 아니면 건너뛰기
+                    }
+                    
                     const rainfall = item.rainfall_mm != null ? parseFloat(item.rainfall_mm) : 0;
 
                     if (!isNaN(rainfall)) {
@@ -314,8 +313,8 @@
                     days.push({
                         day: day,
                         rainfall: !isNaN(rainfall) ? rainfall : null,
-                        weather: '맑음', // API에 status_name이 없으므로 기본값
-                        isHoliday: false // API에 is_holiday가 없으므로 기본값
+                        weather: item.status_name || '맑음',
+                        isHoliday: item.is_holiday == 1 || item.is_holiday === true
                     });
                 }
             });
@@ -329,7 +328,7 @@
                 year: year,
                 month: month,
                 region_code: regionCode,
-                region_name: null, // API에 region_name이 없음
+                region_name: regionName,
                 days: days,
                 avgRainfall: avgRainfall,
                 weeklyAverages: weeklyAverages
@@ -362,18 +361,6 @@
             }
 
             return weeks;
-        }
-
-        function calculateWeeklyAverages(weeks) {
-            return weeks.map(week => {
-                const validDays = week.filter(Boolean);
-                if (!validDays.length) {
-                    return '-';
-                }
-
-                const avgRain = validDays.reduce((sum, day) => sum + (day.rainfall ?? 0), 0) / validDays.length;
-                return `${avgRain.toFixed(1)} mm`;
-            });
         }
 
         function syncWeekRowHeights() {
@@ -458,34 +445,47 @@
                         weeklyAveragesMap.set(weekAvg.week_start, weekAvg.avg_rainfall);
                     }
                 });
+                console.log('주 평균 데이터:', Array.from(weeklyAveragesMap.entries()));
             }
 
             // 각 주의 시작일을 계산하여 매핑된 평균값 찾기
+            // SQL의 주 시작일 계산과 동일하게 계산
+            // SQL: CASE WHEN DAYOFWEEK(date_id) = 1 THEN DATE_SUB(date_id, INTERVAL 6 DAY) ELSE DATE_SUB(date_id, INTERVAL DAYOFWEEK(date_id) - 2 DAY) END
             const weeklyAverages = weeks.map((week, index) => {
                 const firstValidDay = week.find(day => day !== null);
                 if (!firstValidDay) return '-';
                 
-                // 주 시작일 계산 (월요일)
+                // 주의 첫 번째 유효한 날짜로 주 시작일 계산
                 const firstDay = new Date(year, month - 1, firstValidDay.day);
-                const dayOfWeek = firstDay.getDay(); // 0=일요일, 1=월요일, ...
-                const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-                const weekStart = new Date(firstDay);
-                weekStart.setDate(firstDay.getDate() + mondayOffset);
+                const dayOfWeek = firstDay.getDay(); // JavaScript: 0=일요일, 1=월요일, ..., 6=토요일
+                
+                // SQL 로직과 동일하게 계산
+                // 일요일(JavaScript 0, MySQL 1): 6일 전 (월요일)
+                // 월~토(JavaScript 1~6, MySQL 2~7): DAYOFWEEK - 2일 전
+                let weekStart;
+                if (dayOfWeek === 0) {
+                    // 일요일: 6일 전 (월요일)
+                    weekStart = new Date(firstDay);
+                    weekStart.setDate(firstDay.getDate() - 6);
+                } else {
+                    // 월~토: DAYOFWEEK - 2일 전
+                    // JavaScript dayOfWeek를 MySQL DAYOFWEEK로 변환: 1(월) -> 2, 2(화) -> 3, ..., 6(토) -> 7
+                    const mysqlDayOfWeek = dayOfWeek + 1;
+                    const offset = mysqlDayOfWeek - 2;
+                    weekStart = new Date(firstDay);
+                    weekStart.setDate(firstDay.getDate() - offset);
+                }
+                
                 const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
                 
                 const avgRainfall = weeklyAveragesMap.get(weekStartStr);
-                return avgRainfall != null && !isNaN(avgRainfall) ? `${avgRainfall.toFixed(1)} mm` : '-';
+                if (avgRainfall == null || isNaN(avgRainfall)) {
+                    console.warn(`주 평균을 찾을 수 없음: week_start=${weekStartStr}, firstDay=${firstValidDay.day}, dayOfWeek=${dayOfWeek}`);
+                    console.warn('사용 가능한 week_start 목록:', Array.from(weeklyAveragesMap.keys()));
+                    return '-';
+                }
+                return `${avgRainfall.toFixed(1)} mm`;
             });
-
-            // fallback: API 데이터가 없으면 계산
-            if (weeklyAverages.every(avg => avg === '-')) {
-                const calculatedAverages = calculateWeeklyAverages(weeks);
-                calculatedAverages.forEach((avg, index) => {
-                    if (weeklyAverages[index] === '-') {
-                        weeklyAverages[index] = avg;
-                    }
-                });
-            }
 
             weeks.forEach((week, index) => {
                 const avgItem = document.createElement('div');

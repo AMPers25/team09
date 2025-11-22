@@ -197,13 +197,67 @@ body {
 }
 
 .calendar-content {
-    display: block;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.week-averages {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    width: 120px;
+    flex-shrink: 0;
+    background: white;
+    border: 1px solid #DFDFDF;
+    padding: 0;
+    align-self: stretch;
+}
+
+.week-averages-title {
+    margin-bottom: 8px;
 }
 
 .calendar-main {
     display: grid;
     grid-template-rows: auto 1fr;
     row-gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.week-averages-title {
+    background: #FFDFDF;
+    padding: 8px 0;
+    text-align: center;
+    font-weight: 500;
+    color: #333;
+    font-size: 0.9em;
+    border-bottom: 1px solid #DFDFDF;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    margin-bottom: 8px;
+}
+
+.week-average-item {
+    background: white;
+    padding: 8px;
+    text-align: center;
+    font-size: 0.85em;
+    color: #666;
+    border-bottom: 1px solid #DFDFDF;
+    min-height: 105px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.week-average-item:last-child {
+    border-bottom: none;
 }
 
 .day-headers {
@@ -221,6 +275,11 @@ body {
     font-weight: 500;
     color: #333;
     font-size: 0.9em;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
 .days-grid {
@@ -297,10 +356,6 @@ body {
     gap: 6px;
     margin-top: auto;
     width: 100%;
-}
-
-.calendar-content--single {
-    display: block;
 }
 
 .day-cell.alert-active {
