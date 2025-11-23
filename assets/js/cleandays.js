@@ -79,10 +79,9 @@
       const regionCode = $region.value;  // 예: 108
       if (!regionCode) return [];
 
-      const res = await fetchJson(`/api/recommend/air-quality/${regionCode}`);
+      const res = await fetchJson(`/team09/api/recommend/air-quality/${regionCode}`);
 
       rows = res.data || [];
-
     }catch(e){
       // mock 폴백 (파일명을 고정하거나, 필요하면 region코드에 맞춰 분기)
       try{
@@ -108,14 +107,14 @@
     }
     if($empty) $empty.hidden = true;
 
-    $list.innerHTML = rows.map(r=>`
+    $list.innerHTML = rows.map((r, idx)=>`
       <li class="li-row" data-start="${r.start_date}" data-end="${r.end_date}">
         <button class="icon-btn star" title="즐겨찾기 추가" aria-label="즐겨찾기 추가">
           <i class="fa-regular fa-star"></i>
         </button>
 
         <div>
-          <div class="li-range">${r.rank}.  ${fmt(r.start_date)} ~ ${fmt(r.end_date)}</div>
+          <div class="li-range">${idx + 1}.  ${fmt(r.start_date)} ~ ${fmt(r.end_date)}</div>
         </div>
 
         <div></div>
@@ -169,23 +168,23 @@
 
       try {
         // /api/bookmarks?region_code=...&start_date=...&end_date=...
-        const url = new URL(`/api/bookmarks`);
+        const url = new URL(`/team09/api/bookmarks`, window.location.origin);
         url.searchParams.set('region_code', regionCode);
         url.searchParams.set('start_date', start);
         url.searchParams.set('end_date',   end);
 
-        const res = await fetchJson(url.toString(), { method: 'DELETE' });
-        if (!res.ok) throw new Error('delete failed');
+        const res = await fetchJson(url.toString(), { method: 'DELETE', credentials: 'include' });
+        if (res.status !== 200) throw new Error('delete failed');
 
-        // (선택) mock 로컬스토리지에도 저장해뒀다면 같이 제거
-        const key  = 'bookmarks';
-        const list = JSON.parse(localStorage.getItem(key) || '[]');
-        const next = list.filter(x =>
-          !(String(x.region_code) === String(regionCode) &&
-            x.start_date === start &&
-            x.end_date   === end)
-        );
-        localStorage.setItem(key, JSON.stringify(next));
+        // // (선택) mock 로컬스토리지에도 저장해뒀다면 같이 제거
+        // const key  = 'bookmarks';
+        // const list = JSON.parse(localStorage.getItem(key) || '[]');
+        // const next = list.filter(x =>
+        //   !(String(x.region_code) === String(regionCode) &&
+        //     x.start_date === start &&
+        //     x.end_date   === end)
+        // );
+        // localStorage.setItem(key, JSON.stringify(next));
       } catch (err) {
         // 서버 삭제 실패 시 UI 롤백
         starBtn.classList.add('active');
@@ -207,12 +206,15 @@
     };
 
     try{
-      const r = await fetchJson(`/api/bookmarks`, {
+      const r = await fetchJson(`/team09/api/bookmarks`, {
         method:'POST',
+        credentials: 'include',
         headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify(payload)
       });
-      if (!r.ok) throw new Error('save failed');
+      if (r.status !== 200 && r.status !== 201) {
+        throw new Error('save failed');
+      }
 
       // TODO: 서버가 bookmark_id를 응답으로 준다면,
       // 여기서 li.dataset.id = res.bookmark_id 같은 식으로 저장해둘 수도 있음.
@@ -241,8 +243,47 @@
     await fillRegions();
     bindGoButton();
 
+    // 1) 여행 적합 날짜 추천 데이터
     const rows = await loadData();
+
+    // 2) 즐겨찾기 목록 불러오기
+    let bookmarks = [];
+    try {
+      const bmRes = await fetchJson(`/team09/api/bookmarks`);
+      bookmarks = bmRes.data || [];
+    } catch (e) {
+      console.warn("즐겨찾기 목록 불러오기 실패:", e);
+    }
+
+    // 3) rows 와 bookmarks 매칭 후 'active' 설정
+    rows.forEach(r => {
+      const exists = bookmarks.some(bm =>
+        String(bm.region_code) === String($region.value) &&
+        bm.start_date === r.start_date &&
+        bm.end_date === r.end_date
+      );
+      r.isFavorite = exists;
+    });
+    // 4) 랜더링
     renderList(rows);
+
+    // 5) 렌더 후 별 UI 반영
+    document.querySelectorAll(".li-row").forEach(li => {
+      const start = li.dataset.start;
+      const end   = li.dataset.end;
+
+      const matched = bookmarks.some(bm =>
+        bm.start_date === start &&
+        bm.end_date   === end &&
+        String(bm.region_code) === String($region.value)
+      );
+
+      if (matched) {
+        const starBtn = li.querySelector(".star");
+        starBtn.classList.add("active");
+        starBtn.innerHTML = '<i class="fa-solid fa-star"></i>';
+      }
+    });    
 
     $('#list').addEventListener('click', onClickList);
   })();

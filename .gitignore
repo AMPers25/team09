@@ -10,3 +10,6 @@
 
 #캐시
 *.cache
+
+# Local-only rewrite file
+.htaccess

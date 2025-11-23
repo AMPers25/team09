@@ -8,18 +8,16 @@
      return r.json();
     });
 
-    const API_BASE = "http://localhost/team09/index.php";
-
-    // 간단한 JSON 요청(DELETE 등)
-    async function apiJSON(method, url, body){
-     const r = await fetch(url, {
-       method,
-       headers: { 'Content-Type':'application/json', 'Accept':'application/json' },
-       body: body ? JSON.stringify(body) : undefined
-      });
-      // 서버가 항상 JSON을 주지 않을 수 있으니 예외 처리
-      try { return await r.json(); } catch { return { ok: r.ok }; }
-    }
+    // // 간단한 JSON 요청(DELETE 등)
+    // async function apiJSON(method, url, body){
+    //  const r = await fetch(url, {
+    //    method,
+    //    headers: { 'Content-Type':'application/json', 'Accept':'application/json' },
+    //    body: body ? JSON.stringify(body) : undefined
+    //   });
+    //   // 서버가 항상 JSON을 주지 않을 수 있으니 예외 처리
+    //   try { return await r.json(); } catch { return { ok: r.ok }; }
+    // }
 
     // --- region_code → region_name 매핑 캐시 ---
     let REGION_MAP = null;
@@ -73,7 +71,7 @@
     let data = [];
     try {
         // 계약: GET /api/bookmarks → { ok:true, data:[...] }
-        const res = await fetchJson(`${API_BASE}/api/bookmarks`);
+        const res = await fetchJson(`/team09/api/bookmarks`);
         if (res && (res.ok ?? true) && Array.isArray(res.data)) {
            data = res.data;
         } else {
@@ -102,6 +100,17 @@
 
     renderList(data);
 
+    /** 삭제 후 남은 즐겨찾기 항목들의 번호를 1부터 다시 매겨주는 함수 */
+    function renumberBookmarks() {
+        const items = document.querySelectorAll('#bmList .bm-item');
+        items.forEach((li, idx) => {
+            const rankDiv = li.querySelector('.bm-rank');
+            if (rankDiv) {
+            rankDiv.textContent = `${idx + 1}.`;
+            }
+        });
+    }
+
     // 삭제 이벤트(위임)
     if ($list) {
         $list.addEventListener('click', async (e)=>{
@@ -112,35 +121,40 @@
         if (!li) return;
 
         const id     = li.dataset.id;    // 서버 bookmark_id (없을 수도 있음: mock)
-        const region = li.dataset.region;
-        const start  = li.dataset.start;
-        const end    = li.dataset.end;
+        // const region = li.dataset.region;
+        // const start  = li.dataset.start;
+        // const end    = li.dataset.end;
 
         // 1) UI에서 먼저 제거(낙관적)
         const parent = li.parentElement;
         const savedNextSibling = li.nextElementSibling; // 실패시 복구용
         li.remove();
         if (!parent.children.length && $empty) $empty.hidden = false;
+        
+        // ★ 삭제 성공 → 번호 재정렬
+        renumberBookmarks();
 
         // 2) 서버에 삭제 요청 (id가 있을 때만)
         try {
             if (has(id)) {
             // 계약: DELETE /api/bookmarks/:id  → {ok:true}
-            const res = await apiJSON('DELETE', `${API_BASE}/api/bookmarks/${id}`);
-            if (!(res && (res.ok ?? false))) {
-                throw new Error(res?.error || 'delete failed');
-            }
-            } else {
-            // mock/로컬스토리지 삭제 시도(선택)
-            const key = 'bookmarks';
-            const list = JSON.parse(localStorage.getItem(key) || '[]');
-            const next = list.filter(x =>
-                !(String(x.region_code)===String(region) &&
-                x.start_date===start &&
-                x.end_date===end)
-            );
-            localStorage.setItem(key, JSON.stringify(next));
-            }
+            const res = await fetch(`/team09/api/bookmarks/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            if (res.status !== 200 ) throw new Error('delete failed');
+            } 
+            // else {
+            // // mock/로컬스토리지 삭제 시도(선택)
+            // const key = 'bookmarks';
+            // const list = JSON.parse(localStorage.getItem(key) || '[]');
+            // const next = list.filter(x =>
+            //     !(String(x.region_code)===String(region) &&
+            //     x.start_date===start &&
+            //     x.end_date===end)
+            // );
+            // localStorage.setItem(key, JSON.stringify(next));
+            // }
         } catch (err) {
             // 실패 시 복구
             if (savedNextSibling) parent.insertBefore(li, savedNextSibling);

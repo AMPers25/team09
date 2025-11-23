@@ -98,16 +98,19 @@
   if ($popularList) {
     try {
       // 실제 API 호출
-      const res = await fetchJson('/api/regions/popular');
+      const res = await fetchJson(`/team09/api/ranking?limit=5`);
 
       const list = res.data || [];
       if (list.length === 0) {
         $popularList.innerHTML = `<li>데이터가 없습니다.</li>`;
       } else {
         $popularList.innerHTML = list
-          .map(item => `
-            <li>${item.rank}. ${item.region_name} </li>
-        ` )
+          .map(item => {
+            const displayName = item.province 
+            ? `${item.province} ${item.region_name}`
+            : item.region_name;
+            return `<li>${displayName}</li>`;
+          })
           .join('');
       }
 
