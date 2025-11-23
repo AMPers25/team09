@@ -157,8 +157,7 @@
       const m = String(base.getMonth()+1).padStart(2,'0');
 
       const params = new URLSearchParams();
-      if (has($region.value)) params.set('region', $region.value);
-      params.set('year', y);
+      if (has($region.value)) params.set('region_code', $region.value);
       params.set('month', m);
 
       location.href = `temp-calendar.html?${params.toString()}`;        
