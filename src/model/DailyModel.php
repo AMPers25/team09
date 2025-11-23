@@ -35,12 +35,14 @@ class DailyModel
               d.date_id,
               t.avg_temp, t.max_temp, t.min_temp, t.daily_temp_range,
               rn.daily_rainfall, rn.humidity, rn.wind_speed, rn.cloud_cover, rn.status_code,
+              ws.status_name,
               wa.alert_time, wa.alert_type,
               aq.pm10
             FROM Region r
             JOIN DateDim d ON d.date_id = :date_id
             LEFT JOIN Temperature t ON t.region_code = r.region_code AND t.date_id = d.date_id
             LEFT JOIN Rain rn ON rn.region_code = r.region_code AND rn.date_id = d.date_id
+            LEFT JOIN WeatherStatusDim ws ON ws.status_code = rn.status_code
             LEFT JOIN WeatherAlert wa ON wa.region_code = r.region_code AND wa.date_id = d.date_id
             LEFT JOIN AirQuality aq ON aq.region_code = r.region_code AND aq.date_id = d.date_id
             WHERE r.region_code = :region_code

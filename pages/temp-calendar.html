@@ -39,11 +39,6 @@
         <div class="calendar-container">
             <div class="secondary-nav">
                 <div class="calendar-controls">
-
-
-                    
-                    <!-- API 연결 이후 -->
-                    <!-- 아래의 디폴트 값 없애기 -->    
                     <span class="year-display">2024년</span>
                     <button id="prevMonthBtn" class="nav-arrow" type="button" aria-label="이전 달" onclick="changeMonth(-1)">‹</button>
                     <span class="month-display" id="currentMonthDisplay">9월</span>
@@ -51,7 +46,6 @@
                 </div>
             </div>
             <div class="calendar-content">
-                <div class="week-averages" id="weekAverages"></div>
                 <div class="calendar-main">
                     <div class="day-headers" id="dayHeaders"></div>
                     <div class="days-grid" id="daysGrid"></div>
@@ -60,12 +54,6 @@
         </div>
     </div>
 
-    <!-- 서버에서 JSON을 주입할 수 있는 영역 -->
-    <!--
-    <script id="embeddedCalendarData" type="application/json">
-        { ... }
-    </script>
-    -->
 
     <script>
         const FIXED_YEAR = 2024;
@@ -78,32 +66,10 @@
             '눈': './icons/snow.png'
         };
 
-        const REGION_OPTIONS = [
-            { code: '108', name: '서울' },
-            { code: '159', name: '부산' },
-            { code: '112', name: '인천' },
-            { code: '143', name: '대구' },
-            { code: '156', name: '광주' },
-            { code: '133', name: '대전' },
-            { code: '152', name: '울산' },
-            { code: '239', name: '세종' },
-            { code: '184', name: '제주' },
-            { code: '104', name: '북강릉' },
-            { code: '090', name: '속초' },
-            { code: '093', name: '북춘천' },
-            { code: '168', name: '여수' },
-            { code: '146', name: '전주' },
-            { code: '283', name: '경주' },
-            { code: '115', name: '울릉도' },
-            { code: '162', name: '통영' },
-            { code: '232', name: '천안' },
-            { code: '131', name: '청주' },
-            { code: '119', name: '수원' }
-        ];
 
         // URL 파라미터에서 region_code와 month 읽기
         const urlParams = new URLSearchParams(window.location.search);
-        const regionCode = urlParams.get('region_code') || urlParams.get('region') || '';
+        const regionCode = urlParams.get('region_code') || '';
         const monthParam = urlParams.get('month');
         const initialMonth = monthParam ? parseInt(monthParam, 10) - 1 : new Date().getMonth();
         
@@ -112,7 +78,7 @@
         let currentTab = 'temperature';
         let activeDayCell = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             try {
                 // region_code가 필수이므로 없으면 에러 (DOMContentLoaded 안에서 체크)
                 if (!regionCode) {
@@ -120,11 +86,9 @@
                 }
                 
                 updateMonthDisplay(); // 초기 로드 시 버튼 상태 업데이트
-                loadCalendarData();
                 setupTabHandlers();
                 setupHomeButton();
-                setupRegionSelector();
-                window.addEventListener('resize', debounce(syncWeekRowHeights, 100));
+                await loadCalendarData();
             } catch (error) {
                 console.error('초기화 중 오류 발생:', error);
                 document.body.innerHTML = `<div style="padding: 20px; text-align: center;">
@@ -144,29 +108,56 @@
             }
         }
 
-        function setupRegionSelector() {
+        async function setupRegionSelector() {
             const selector = document.getElementById('regionSelector');
             const goBtn = document.getElementById('regionGoBtn');
             if (!selector || !goBtn) return;
 
-            selector.innerHTML = REGION_OPTIONS
-                .map(option => `<option value="${option.code}">${option.name}</option>`)
-                .join('');
+            try {
+                // 모든 지역 목록 가져오기
+                const response = await fetch('/team09/api/ranking?limit=100', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
 
-            if (regionCode) {
-                selector.value = regionCode;
+                if (!response.ok) {
+                    throw new Error(`API 응답 오류: ${response.status}`);
+                }
+
+                const responseData = await response.json();
+                const regions = responseData.data || [];
+
+                // 지역 목록을 드롭다운에 추가
+                selector.innerHTML = regions
+                    .map(region => `<option value="${region.region_code}">${region.region_name}</option>`)
+                    .join('');
+
+                // 현재 선택된 지역 코드 설정
+                if (regionCode) {
+                    selector.value = regionCode;
+                }
+
+                goBtn.addEventListener('click', () => {
+                    const selectedCode = selector.value;
+                    if (!selectedCode) return;
+
+                    const month = currentDate.getMonth() + 1;
+                    const params = new URLSearchParams();
+                    params.set('region_code', selectedCode);
+                    params.set('month', String(month).padStart(2, '0'));
+                    window.location.href = `temp-calendar.html?${params.toString()}`;
+                });
+            } catch (error) {
+                console.error('지역 목록 로드 실패:', error);
+                // 에러 발생 시 현재 지역만 표시
+                if (regionCode && calendarData && calendarData.region_name) {
+                    selector.innerHTML = `<option value="${regionCode}">${calendarData.region_name}</option>`;
+                } else if (regionCode) {
+                    selector.innerHTML = `<option value="${regionCode}">${regionCode}</option>`;
+                }
             }
-
-            goBtn.addEventListener('click', () => {
-                const selectedCode = selector.value;
-                if (!selectedCode) return;
-
-                const month = currentDate.getMonth() + 1;
-                const params = new URLSearchParams();
-                params.set('region_code', selectedCode);
-                params.set('month', String(month).padStart(2, '0'));
-                window.location.href = `temp-calendar.html?${params.toString()}`;
-            });
         }
 
         function debounce(fn, delay = 150) {
@@ -254,12 +245,9 @@
             const month = currentDate.getMonth() + 1;
 
             try {
-                const params = new URLSearchParams({
-                    region_code: regionCode,
-                    month: String(month).padStart(2, '0')
-                });
-                
-                const response = await fetch(`../api/temp-calendar.php?${params.toString()}`, {
+                // 새로운 API 엔드포인트: /api/calendar/temperature/{region_code}/{month}
+                const apiUrl = `/team09/api/calendar/temperature/${regionCode}/${month}`;
+                const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -267,16 +255,26 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API 응답 오류: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.error || errorData.message || `API 응답 오류: ${response.status}`;
+                    throw new Error(errorMessage);
                 }
 
-                const data = await response.json();
-                if (!data) {
+                const responseData = await response.json();
+                if (!responseData) {
                     throw new Error('API에서 데이터를 받지 못했습니다.');
                 }
 
-                calendarData = normalizeCalendarData(data);
+                // API 응답 형식: {status, message, data}
+                const apiData = responseData.data || responseData;
+                if (!Array.isArray(apiData)) {
+                    throw new Error('API 응답 형식이 올바르지 않습니다.');
+                }
+
+                // 프론트엔드 형식으로 변환
+                calendarData = transformToCalendarFormat(apiData, year, month);
                 renderCalendar();
+                setupRegionSelector();
             } catch (error) {
                 console.error('API 호출 실패:', error);
                 document.body.innerHTML = `<div style="padding: 20px; text-align: center;">
@@ -287,77 +285,52 @@
             }
         }
 
-        function normalizeCalendarData(data) {
-            const clone = cloneData(data);
-            clone.weeklyAverages = Array.isArray(clone.weeklyAverages) ? clone.weeklyAverages : [];
-            clone.days = Array.isArray(clone.days)
-                ? clone.days.map(day => (day ? { ...day } : null))
-                : [];
-            return clone;
-        }
+        function transformToCalendarFormat(apiData, year, month) {
+            const days = [];
+            let regionName = null;
+            let monthAvgTemp = null;
+            let monthMinTemp = null;
+            let monthMaxTemp = null;
 
-        function cloneData(data) {
-            return typeof structuredClone === 'function'
-                ? structuredClone(data)
-                : JSON.parse(JSON.stringify(data));
-        }
-
-        function buildWeeks(days, year, month) {
-            const firstDay = new Date(year, month - 1, 1);
-            const startOffset = (firstDay.getDay() + 6) % 7;
-            const weeks = [];
-            let currentWeek = [];
-
-            for (let i = 0; i < startOffset; i++) {
-                currentWeek.push(null);
-            }
-
-            days.forEach(day => {
-                currentWeek.push(day);
-                if (currentWeek.length === 7) {
-                    weeks.push(currentWeek);
-                    currentWeek = [];
-                }
-            });
-
-            if (currentWeek.length > 0) {
-                while (currentWeek.length < 7) {
-                    currentWeek.push(null);
-                }
-                weeks.push(currentWeek);
-            }
-
-            return weeks;
-        }
-
-        function calculateWeeklyAverages(weeks) {
-            return weeks.map(week => {
-                const validDays = week.filter(Boolean);
-                if (!validDays.length) {
-                    return '-';
+            apiData.forEach((item, index) => {
+                // region_name은 모든 항목에서 동일하므로 첫 번째 항목에서만 가져옴
+                if (!regionName && item.region_name) {
+                    regionName = item.region_name;
                 }
 
-                const avgMin = validDays.reduce((sum, day) => sum + day.minTemp, 0) / validDays.length;
-                const avgMax = validDays.reduce((sum, day) => sum + day.maxTemp, 0) / validDays.length;
-                return `${Math.round(avgMin)}° / ${Math.round(avgMax)}°`;
+                // SQL에서 계산한 월별 집계 값은 첫 번째 항목에서만 가져옴
+                if (index === 0) {
+                    monthAvgTemp = item.month_avg_temp != null ? parseFloat(item.month_avg_temp) : null;
+                    monthMinTemp = item.month_min_temp != null ? parseFloat(item.month_min_temp) : null;
+                    monthMaxTemp = item.month_max_temp != null ? parseFloat(item.month_max_temp) : null;
+                }
+
+                const dateParts = item.date_id.split('-');
+                const day = parseInt(dateParts[2], 10);
+
+                // min_temp와 max_temp를 숫자로 변환 및 유효성 검사
+                const minTemp = item.min_temp != null ? parseFloat(item.min_temp) : null;
+                const maxTemp = item.max_temp != null ? parseFloat(item.max_temp) : null;
+
+                days.push({
+                    day: day,
+                    minTemp: minTemp != null && !isNaN(minTemp) ? Math.round(minTemp) : null,
+                    maxTemp: maxTemp != null && !isNaN(maxTemp) ? Math.round(maxTemp) : null,
+                    weather: item.status_name || '맑음',
+                    isHoliday: item.is_holiday == 1 || item.is_holiday === true
+                });
             });
-        }
 
-        function syncWeekRowHeights() {
-            const weekItems = Array.from(document.querySelectorAll('.week-average-item'));
-            const dayCells = Array.from(document.querySelectorAll('.days-grid .day-cell'));
-            if (!weekItems.length || !dayCells.length) return;
-
-            weekItems.forEach(item => {
-                item.style.height = 'auto';
-            });
-
-            const rows = Math.ceil(dayCells.length / 7);
-            for (let i = 0; i < rows && i < weekItems.length; i++) {
-                const rowCells = dayCells.slice(i * 7, (i + 1) * 7);
-                const rowHeight = Math.max(...rowCells.map(cell => cell.getBoundingClientRect().height));
-                weekItems[i].style.height = `${rowHeight}px`;
-            }
+            return {
+                year: year,
+                month: month,
+                region_code: regionCode,
+                region_name: regionName,
+                days: days,
+                monthAvgTemp: monthAvgTemp != null && !isNaN(monthAvgTemp) ? Math.round(monthAvgTemp) : null,
+                monthMinTemp: monthMinTemp != null && !isNaN(monthMinTemp) ? Math.round(monthMinTemp) : null,
+                monthMaxTemp: monthMaxTemp != null && !isNaN(monthMaxTemp) ? Math.round(monthMaxTemp) : null
+            };
         }
 
         function formatDateToISO(year, month, day) {
@@ -366,45 +339,20 @@
             return `${year}-${normalizedMonth}-${normalizedDay}`;
         }
 
-        async function resolveDayInfoLink(regionCode, year, month, day) {
-            const dateParam = formatDateToISO(year, month, day);
-            const query = new URLSearchParams({
-                region_code: regionCode,
+        function handleDaySelection(dayData, context) {
+            const { region_code, year, month } = context;
+            if (!region_code || !dayData || !dayData.day) {
+                console.error('필수 파라미터가 없습니다.');
+                return;
+            }
+
+            const dateParam = formatDateToISO(year, month, dayData.day);
+            const params = new URLSearchParams({
+                region_code: region_code,
                 date: dateParam
             });
-
-            try {
-                const response = await fetch(`../api/day-info-link.php?${query.toString()}`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API 응답 오류: ${response.status}`);
-                }
-
-                const payload = await response.json();
-                if (payload && typeof payload.url === 'string' && payload.url.length > 0) {
-                    return payload.url;
-                }
-                throw new Error('API에서 유효한 URL을 받지 못했습니다.');
-            } catch (error) {
-                console.error('day-info 링크 API 호출 실패:', error);
-                throw error;
-            }
-        }
-
-        async function handleDaySelection(dayData, context) {
-            const { region_code, year, month } = context;
-            try {
-                const targetUrl = await resolveDayInfoLink(region_code || '', year, month, dayData.day);
-                window.location.href = targetUrl;
-            } catch (error) {
-                console.error('날짜 선택 처리 실패:', error);
-                alert('상세 정보를 불러올 수 없습니다. 다시 시도해주세요.');
-            }
+            
+            window.location.href = `day-info.html?${params.toString()}`;
         }
 
         function renderCalendar() {
@@ -414,24 +362,23 @@
             const month = calendarData.month;
 
             const regionCodeForContext = calendarData.region_code || regionCode;
-            const avgTemp = Math.round((calendarData.avgMinTemp + calendarData.avgMaxTemp) / 2);
+            
+            // SQL에서 계산한 월평균 기온 사용
+            const avgTemp = calendarData.monthAvgTemp != null && !isNaN(calendarData.monthAvgTemp) ? calendarData.monthAvgTemp : '--';
             document.getElementById('avgTemp').textContent = `${avgTemp}°`;
-            document.getElementById('minMaxTemp').textContent = `${calendarData.monthMinTemp}°/${calendarData.monthMaxTemp}°`;
+            
+            // SQL에서 계산한 월최소/월최대 기온 사용
+            const minTemp = calendarData.monthMinTemp != null && !isNaN(calendarData.monthMinTemp) ? calendarData.monthMinTemp : '--';
+            const maxTemp = calendarData.monthMaxTemp != null && !isNaN(calendarData.monthMaxTemp) ? calendarData.monthMaxTemp : '--';
+            document.getElementById('minMaxTemp').textContent = `${minTemp}°/${maxTemp}°`;
 
             updateMonthDisplay();
 
-            const weekAveragesContainer = document.getElementById('weekAverages');
             const dayHeadersContainer = document.getElementById('dayHeaders');
             const daysGrid = document.getElementById('daysGrid');
 
-            weekAveragesContainer.innerHTML = '';
             dayHeadersContainer.innerHTML = '';
             daysGrid.innerHTML = '';
-
-            const averagingTitle = document.createElement('div');
-            averagingTitle.className = 'week-averages-title';
-            averagingTitle.textContent = '주 평균';
-            weekAveragesContainer.appendChild(averagingTitle);
 
             ['월', '화', '수', '목', '금', '토', '일'].forEach(day => {
                 const headerCell = document.createElement('div');
@@ -440,60 +387,60 @@
                 dayHeadersContainer.appendChild(headerCell);
             });
 
-            const weeks = buildWeeks(calendarData.days, year, month);
-            const weeklyAverages =
-                calendarData.weeklyAverages && calendarData.weeklyAverages.length
-                    ? calendarData.weeklyAverages
-                    : calculateWeeklyAverages(weeks);
+            // 첫 번째 날의 요일 계산 (월요일=0, 일요일=6)
+            const firstDay = new Date(year, month - 1, 1);
+            const startOffset = (firstDay.getDay() + 6) % 7;
 
-            weeks.forEach((week, index) => {
-                const avgItem = document.createElement('div');
-                avgItem.className = 'week-average-item';
-                avgItem.textContent = weeklyAverages[index] ?? '-';
-                weekAveragesContainer.appendChild(avgItem);
+            // 빈 셀 추가 (월 시작 전)
+            for (let i = 0; i < startOffset; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'day-cell empty';
+                daysGrid.appendChild(emptyCell);
+            }
 
-                week.forEach(dayData => {
-                    const dayCell = document.createElement('div');
-                    dayCell.className = 'day-cell';
+            // 날짜 데이터 렌더링
+            calendarData.days.forEach(dayData => {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell clickable';
 
-                    if (!dayData) {
-                        dayCell.classList.add('empty');
-                        daysGrid.appendChild(dayCell);
-                        return;
+                if (dayData.isHoliday) {
+                    dayCell.classList.add('holiday');
+                }
+
+                const weatherImage = WEATHER_ICON_MAP[dayData.weather] || WEATHER_ICON_MAP['맑음'];
+
+                dayCell.innerHTML = `
+                    <div class="day-number ${dayData.isHoliday ? 'holiday-text' : ''}">${dayData.day}</div>
+                    <div class="weather-icon">
+                        <img src="${weatherImage}" alt="${dayData.weather}" class="weather-image">
+                    </div>
+                    <div class="temp-text">
+                        <span>${dayData.minTemp}°</span>
+                        <span>${dayData.maxTemp}°</span>
+                    </div>
+                `;
+
+                dayCell.addEventListener('click', () => {
+                    if (activeDayCell && activeDayCell !== dayCell) {
+                        activeDayCell.classList.remove('is-active');
                     }
+                    activeDayCell = dayCell;
+                    dayCell.classList.add('is-active');
 
-                    dayCell.classList.add('clickable');
-
-                    if (dayData.isHoliday) {
-                        dayCell.classList.add('holiday');
-                    }
-
-                    const weatherImage = WEATHER_ICON_MAP[dayData.weather] || WEATHER_ICON_MAP['맑음'];
-
-                    dayCell.innerHTML = `
-                        <div class="day-number ${dayData.isHoliday ? 'holiday-text' : ''}">${dayData.day}</div>
-                        <div class="weather-icon">
-                            <img src="${weatherImage}" alt="${dayData.weather}" class="weather-image">
-                        </div>
-                        <div class="temp-text">
-                            <span>${dayData.minTemp}°</span>
-                            <span>${dayData.maxTemp}°</span>
-                        </div>
-                    `;
-
-                    dayCell.addEventListener('click', () => {
-                        if (activeDayCell && activeDayCell !== dayCell) {
-                            activeDayCell.classList.remove('is-active');
-                        }
-                        activeDayCell = dayCell;
-                        dayCell.classList.add('is-active');
-
-                        handleDaySelection(dayData, { region_code: regionCodeForContext, year, month });
-                    });
-
-                    daysGrid.appendChild(dayCell);
+                    handleDaySelection(dayData, { region_code: regionCodeForContext, year, month });
                 });
+
+                daysGrid.appendChild(dayCell);
             });
+
+            // 월 끝의 빈 셀 추가 (7의 배수로 맞추기)
+            const totalCells = startOffset + calendarData.days.length;
+            const remainingCells = (7 - (totalCells % 7)) % 7;
+            for (let i = 0; i < remainingCells; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'day-cell empty';
+                daysGrid.appendChild(emptyCell);
+            }
 
             if (!daysGrid.querySelector('.day-cell.is-active')) {
                 const firstClickable = daysGrid.querySelector('.day-cell.clickable');
@@ -502,8 +449,6 @@
                     activeDayCell = firstClickable;
                 }
             }
-
-            syncWeekRowHeights();
         }
     </script>
 </body>

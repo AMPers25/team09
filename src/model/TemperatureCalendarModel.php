@@ -23,18 +23,44 @@ class TemperatureCalendarModel {
      * @return array 일자별 평균기온 목록 (date_id, avg_temp)
      */
     public function getDailyAverageTemperature(string $regionCode, int $year, int $month): array {
-        // 성능 향상을 위해 DateDim 테이블의 year 컬럼을 사용하도록 쿼리를 수정합니다.
-        // DateDim에 year, month 컬럼이 있다고 가정합니다.
         $sql = "
             SELECT
+                r.region_name,
                 d.date_id,
+                d.day,
+                d.is_holiday,
                 t.avg_temp,
                 t.min_temp,
-                t.max_temp
+                t.max_temp,
+                ws.status_name,
+                (SELECT ROUND(AVG(t2.avg_temp), 1) 
+                 FROM Temperature t2 
+                 JOIN DateDim d2 ON t2.date_id = d2.date_id 
+                 WHERE t2.region_code = t.region_code 
+                   AND YEAR(d2.date_id) = 2024 
+                   AND d2.month = d.month) AS month_avg_temp,
+                (SELECT MIN(t2.min_temp) 
+                 FROM Temperature t2 
+                 JOIN DateDim d2 ON t2.date_id = d2.date_id 
+                 WHERE t2.region_code = t.region_code 
+                   AND YEAR(d2.date_id) = 2024 
+                   AND d2.month = d.month) AS month_min_temp,
+                (SELECT MAX(t2.max_temp) 
+                 FROM Temperature t2 
+                 JOIN DateDim d2 ON t2.date_id = d2.date_id 
+                 WHERE t2.region_code = t.region_code 
+                   AND YEAR(d2.date_id) = 2024 
+                   AND d2.month = d.month) AS month_max_temp
             FROM
                 Temperature t
             JOIN
+                Region r ON r.region_code = t.region_code
+            JOIN
                 DateDim d ON t.date_id = d.date_id
+            LEFT JOIN
+                Rain rn ON rn.region_code = t.region_code AND rn.date_id = t.date_id
+            LEFT JOIN
+                WeatherStatusDim ws ON ws.status_code = rn.status_code
             WHERE
                 t.region_code = :regionCode
                 AND YEAR(d.date_id) = 2024
@@ -44,16 +70,13 @@ class TemperatureCalendarModel {
         ";
 
         // SQL 쿼리 문자열 정규화 (줄바꿈/다중 공백 제거)
-        // 1. 주석 제거 (선택 사항이지만 안전함)
         $cleanSql = preg_replace("/(--.*)|(\/\*.*?\*\/)/s", '', $sql);
-        // 2. 줄바꿈, 탭, 다중 공백을 단일 공백으로 치환하고 앞뒤 공백 제거
         $cleanSql = trim(preg_replace('/\s+/', ' ', $cleanSql));
 
         try {
-
             $stmt = $this->db->prepare($cleanSql);
             $stmt->bindParam(':regionCode', $regionCode, \PDO::PARAM_STR);
-            $stmt->bindParam(':month', $month, \PDO::PARAM_INT); // 월 바인딩
+            $stmt->bindParam(':month', $month, \PDO::PARAM_INT);
 
             $stmt->execute();
             return $stmt->fetchAll(\PDO::FETCH_ASSOC);

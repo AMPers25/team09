@@ -113,13 +113,13 @@ body {
     color: #666;
 }
 
-.year-display,
 .month-display,
 .nav-arrow {
-    background: #EFEFEF;
+    background: #e7f3fb;
     border-radius: 999px;
     padding: 6px 14px;
-    font-size: 0.9em;
+    font-size: 1.2em;
+    font-weight: 700;
     color: #666;
     display: inline-flex;
     align-items: center;
@@ -127,7 +127,11 @@ body {
 }
 
 .year-display {
-    font-weight: 500;
+    padding: 6px 14px;
+    font-size: 1.2em;
+    color: #666;
+    display: inline-flex;
+    justify-content: center;
 }
 
 .month-display {
@@ -154,8 +158,9 @@ body {
     display: flex;
     padding: 20px 30px;
     gap: 20px;
-    max-width: 1400px;
+    max-width: 100%;
     margin: 0 auto;
+    width: 100%;
 }
 
 /* 왼쪽 통계 패널 */
@@ -192,42 +197,71 @@ body {
     background: white;
     border-radius: 8px;
     padding: 20px;
+    min-width: 0;
 }
 
 .calendar-content {
-    display: grid;
-    grid-template-columns: 110px 1fr;
-    column-gap: 16px;
-    align-items: start;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: stretch;
 }
 
 .week-averages {
-    display: grid;
-    row-gap: 1px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    width: 120px;
+    flex-shrink: 0;
+    background: white;
+    border: 1px solid #DFDFDF;
+    padding: 0;
+    align-self: stretch;
 }
 
 .week-averages-title {
-    font-weight: 600;
-    color: #333;
-    font-size: 0.9em;
-    text-align: center;
-    padding: 10px 0;
-}
-
-.week-average-item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9em;
-    color: #666;
-    padding: 6px 0;
-    height: auto;
+    margin-bottom: 8px;
 }
 
 .calendar-main {
     display: grid;
     grid-template-rows: auto 1fr;
     row-gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.week-averages-title {
+    background: #e7f3fb;
+    padding: 8px 0;
+    text-align: center;
+    font-weight: 500;
+    color: #333;
+    font-size: 0.9em;
+    border-bottom: 1px solid #DFDFDF;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    margin-bottom: 8px;
+}
+
+.week-average-item {
+    background: white;
+    padding: 8px;
+    text-align: center;
+    font-size: 0.85em;
+    color: #666;
+    border-bottom: 1px solid #DFDFDF;
+    min-height: 105px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.week-average-item:last-child {
+    border-bottom: none;
 }
 
 .day-headers {
@@ -239,12 +273,17 @@ body {
 }
 
 .day-header {
-    background: #FFDFDF;
+    background: #e7f3fb;
     padding: 8px 0;
     text-align: center;
     font-weight: 500;
     color: #333;
     font-size: 0.9em;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 }
 
 .days-grid {
@@ -323,21 +362,18 @@ body {
     width: 100%;
 }
 
-.calendar-content--single {
-    display: block;
-}
-
 .day-cell.alert-active {
-    background: linear-gradient(180deg, rgba(255, 252, 242, 0.7) 0%, rgba(255, 252, 242, 0.9) 100%);
+    background: linear-gradient(180deg, rgba(254, 255, 233, 0.907) 0%, rgba(252, 251, 247, 0.94) 100%);
     border: 1px solid rgba(255, 252, 242, 0.4);
 }
 
-.day-cell.alert-active .day-number {
-    color: #b45309;
+.day-cell.alert-active {
+    color: #e3c035;
 }
 
 .day-cell.alert-active .temp-text {
-    color: #92400e;
+    color: #bf991d;
+    font-weight: 700;
 }
 
 /* 반응형 디자인 */
@@ -351,21 +387,6 @@ body {
         justify-content: space-around;
     }
 
-    .calendar-content {
-        grid-template-columns: 1fr;
-    }
-
-    .week-averages {
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        row-gap: 12px;
-        column-gap: 16px;
-        align-items: center;
-        justify-items: center;
-    }
-
-    .week-average-item {
-        min-height: auto;
-    }
 }
 
 @media (max-width: 768px) {
@@ -387,12 +408,6 @@ body {
 
     .secondary-nav {
         justify-content: center;
-    }
-
-    .week-averages {
-        grid-template-columns: 1fr;
-        justify-items: stretch;
-        align-items: flex-start;
     }
 
     .day-cell {
