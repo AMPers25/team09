@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>경보·주의보 달력</title>
     <link rel="stylesheet" href="../assets/css/calendar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
     <!-- 상단 네비게이션 바 -->
     <div class="top-nav">
         <div class="nav-left">
-            <button class="home-btn" aria-label="홈으로 이동">🏠</button>
+            <button class="home-btn" aria-label="홈으로 이동"><i class="fa-solid fa-house"></i></button>
             <select id="regionSelector" class="region-selector" aria-label="지역 선택"></select>
             <button id="regionGoBtn" class="region-go-btn" type="button">이동</button>
         </div>
@@ -125,7 +126,7 @@
             const homeBtn = document.querySelector('.home-btn');
             if (homeBtn) {
                 homeBtn.addEventListener('click', () => {
-                    window.location.href = '/pages/index.html';
+                    window.location.href = '/team09/pages/index.html';
                 });
             }
         }
