@@ -76,12 +76,25 @@
   async function loadData(){
     let rows = [];
     try{
-      const regionCode = $region.value;  // 예: 108
+      const params = new URLSearchParams(location.search);
+      const regionCode = params.get("region") || $region.value;
       if (!regionCode) return [];
 
-      const res = await fetchJson(`/api/recommend/air-quality/${regionCode}`);
+      const url = `../api/recommend/air-quality/${regionCode}`;
+      const response = await fetchJson(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
 
-      rows = res.data || [];
+      if(!response.ok){
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || errorData.message 
+        throw new Error(errorMessage);
+      }
+
+      rows = response.data || [];
 
     }catch(e){
       // mock 폴백 (파일명을 고정하거나, 필요하면 region코드에 맞춰 분기)
