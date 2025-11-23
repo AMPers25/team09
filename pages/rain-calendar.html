@@ -277,11 +277,10 @@
             const weeklyAverages = [];
             let regionName = null;
 
-            // API 응답에서 DAY, WEEK_AVG, MONTH_TOTAL 레벨 데이터 분리
+            // API 응답에서 DAY, WEEK_AVG 레벨 데이터 분리
+            // MONTH_AVG는 제거되었으므로 프론트엔드에서 일별 데이터로 계산
             apiData.forEach(item => {
-                if (item.level === 'MONTH_TOTAL') {
-                    monthTotalRainfall = item.rainfall_mm;
-                } else if (item.level === 'WEEK_AVG' && item.week_start) {
+                if (item.level === 'WEEK_AVG' && item.week_start) {
                     // 주 평균 강수량 저장
                     weeklyAverages.push({
                         week_start: item.week_start,

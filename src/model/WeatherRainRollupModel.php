@@ -1,7 +1,7 @@
 <?php
 /**
  * File: src/model/WeatherRainRollupModel.php
- * Author: 황혜린
+ * Author: 황혜린, 강한나
  * Description: 기능 2-3. 특정 지역/기간의 일별 강수량 + 월 합계(ROLLUP) 조회 Model
  * Last Updated: 2025-11-17
  */
@@ -19,15 +19,15 @@ class WeatherRainRollupModel
     }
 
     /**
-     * 특정 지역/기간의 일별 강수량, 주 평균, 월 합계(ROLLUP)를 반환
+     * 특정 지역/기간의 일별 강수량, 주 평균을 반환
      *
      * 반환 스키마(Data[item]):
-     *  - level       : "DAY" | "WEEK_AVG" | "MONTH_TOTAL"
-     *  - date_id     : "YYYY-MM-DD" | null (주/월 집계는 null)
+     *  - level       : "DAY" | "WEEK_AVG"
+     *  - date_id     : "YYYY-MM-DD" | null (주 평균일 때는 null)
      *  - ym          : "YYYY-MM"
      *  - week_start  : "YYYY-MM-DD" | null (주 시작일, 주 평균일 때만)
      *  - rainfall_mm : float
-     *  - region_name : string | null (DAY 레벨에서만)
+     *  - region_name  : string | null (DAY 레벨에서만)
      *  - is_holiday  : int | null (DAY 레벨에서만)
      *  - status_name : string | null (DAY 레벨에서만)
      *
@@ -39,100 +39,71 @@ class WeatherRainRollupModel
      */
     public function getRainRollup(string $regionCode, string $fromDate, string $toDate): array
     {
-        // ROLLUP으로 일별/주별 평균/월별 합계를 함께 가져옴
+        // ROLLUP으로 일별 강수량과 주별 평균을 함께 조회
         // 주 시작일은 월요일로 계산 (DAYOFWEEK: 1=일요일, 2=월요일)
+        // 주별 평균은 해당 월의 날짜만으로 계산 (전달/다음달 고려하지 않음)
+        // 월 평균은 프론트엔드에서 일별 데이터로 계산
+        // 주의: GROUPING 함수는 GROUP BY 절의 표현식과 정확히 일치해야 함
+        $weekStartExpr = "CASE WHEN DAYOFWEEK(rn.date_id) = 1 THEN DATE_SUB(rn.date_id, INTERVAL 6 DAY) ELSE DATE_SUB(rn.date_id, INTERVAL DAYOFWEEK(rn.date_id) - 2 DAY) END";
+        
         $sql = "
             SELECT
                 CASE 
-                    WHEN GROUPING(s.week_start) = 0 AND GROUPING(s.date_id) = 0 THEN 'DAY'
-                    WHEN GROUPING(s.week_start) = 0 AND GROUPING(s.date_id) = 1 THEN 'WEEK_AVG'
-                    WHEN GROUPING(s.week_start) = 1 AND GROUPING(s.date_id) = 1 THEN 'MONTH_TOTAL'
+                    WHEN GROUPING($weekStartExpr) = 0 AND GROUPING(rn.date_id) = 0 THEN 'DAY'
+                    WHEN GROUPING($weekStartExpr) = 0 AND GROUPING(rn.date_id) = 1 THEN 'WEEK_AVG'
                     ELSE 'UNKNOWN'
                 END AS level,
                 CASE 
-                    WHEN GROUPING(s.date_id) = 0 THEN DATE_FORMAT(s.date_id, '%Y-%m-%d')
+                    WHEN GROUPING(rn.date_id) = 0 THEN DATE_FORMAT(rn.date_id, '%Y-%m-%d')
                     ELSE NULL
                 END AS date_id,
-                MAX(s.ym) AS ym,
                 CASE 
-                    WHEN GROUPING(s.week_start) = 0 AND GROUPING(s.date_id) = 1 THEN DATE_FORMAT(s.week_start, '%Y-%m-%d')
+                    WHEN GROUPING(rn.date_id) = 0 THEN DATE_FORMAT(rn.date_id, '%Y-%m')
+                    WHEN GROUPING($weekStartExpr) = 0 THEN DATE_FORMAT($weekStartExpr, '%Y-%m')
+                    ELSE NULL
+                END AS ym,
+                CASE 
+                    WHEN GROUPING($weekStartExpr) = 0 AND GROUPING(rn.date_id) = 1 THEN DATE_FORMAT($weekStartExpr, '%Y-%m-%d')
                     ELSE NULL
                 END AS week_start,
                 CASE 
-                    WHEN GROUPING(s.week_start) = 0 AND GROUPING(s.date_id) = 1 THEN ROUND(AVG(s.daily_rainfall), 1)
-                    WHEN GROUPING(s.week_start) = 1 AND GROUPING(s.date_id) = 1 THEN ROUND(AVG(s.daily_rainfall), 1)
-                    ELSE ROUND(SUM(s.daily_rainfall), 1)
+                    WHEN GROUPING($weekStartExpr) = 0 AND GROUPING(rn.date_id) = 1 THEN ROUND(AVG(COALESCE(rn.daily_rainfall, 0)), 1)
+                    ELSE ROUND(SUM(COALESCE(rn.daily_rainfall, 0)), 1)
                 END AS rainfall_mm,
                 CASE 
-                    WHEN GROUPING(s.date_id) = 0 THEN MAX(s.region_name)
+                    WHEN GROUPING(rn.date_id) = 0 THEN MAX(r.region_name)
                     ELSE NULL
                 END AS region_name,
                 CASE 
-                    WHEN GROUPING(s.date_id) = 0 THEN MAX(s.is_holiday)
+                    WHEN GROUPING(rn.date_id) = 0 THEN MAX(d.is_holiday)
                     ELSE NULL
                 END AS is_holiday,
                 CASE 
-                    WHEN GROUPING(s.date_id) = 0 THEN MAX(s.status_name)
+                    WHEN GROUPING(rn.date_id) = 0 THEN MAX(ws.status_name)
                     ELSE NULL
                 END AS status_name
-            FROM (
-                SELECT
-                    rn.region_code,
-                    rn.date_id,
-                    COALESCE(rn.daily_rainfall, 0) AS daily_rainfall,
-                    DATE_FORMAT(rn.date_id, '%Y-%m') AS ym,
-                    -- 주 시작일 계산: 월요일 기준 (일요일은 전 주의 월요일)
-                    CASE 
-                        WHEN DAYOFWEEK(rn.date_id) = 1 THEN DATE_SUB(rn.date_id, INTERVAL 6 DAY)  -- 일요일: 6일 전 (월요일)
-                        ELSE DATE_SUB(rn.date_id, INTERVAL DAYOFWEEK(rn.date_id) - 2 DAY)  -- 월~토: 정상 계산
-                    END AS week_start,
-                    r.region_name,
-                    d.is_holiday,
-                    ws.status_name
-                FROM Rain rn
-                JOIN Region r ON r.region_code = rn.region_code
-                JOIN DateDim d ON d.date_id = rn.date_id
-                LEFT JOIN WeatherStatusDim ws ON ws.status_code = rn.status_code
-                WHERE rn.region_code = :region_code
-                  AND (
-                      -- 해당 월의 날짜
-                      rn.date_id BETWEEN :from_date AND :to_date
-                      OR
-                      -- 해당 월의 날짜가 속한 주의 전체 날짜 (전달/다음달 포함)
-                      CASE 
-                          WHEN DAYOFWEEK(rn.date_id) = 1 THEN DATE_SUB(rn.date_id, INTERVAL 6 DAY)
-                          ELSE DATE_SUB(rn.date_id, INTERVAL DAYOFWEEK(rn.date_id) - 2 DAY)
-                      END IN (
-                          SELECT DISTINCT 
-                              CASE 
-                                  WHEN DAYOFWEEK(d2.date_id) = 1 THEN DATE_SUB(d2.date_id, INTERVAL 6 DAY)
-                                  ELSE DATE_SUB(d2.date_id, INTERVAL DAYOFWEEK(d2.date_id) - 2 DAY)
-                              END
-                          FROM DateDim d2
-                          WHERE d2.date_id BETWEEN :from_date_sub AND :to_date_sub
-                      )
-                  )
-            ) s
-            GROUP BY s.week_start, s.date_id WITH ROLLUP
+            FROM Rain rn
+            JOIN Region r ON r.region_code = rn.region_code
+            JOIN DateDim d ON d.date_id = rn.date_id
+            LEFT JOIN WeatherStatusDim ws ON ws.status_code = rn.status_code
+            WHERE rn.region_code = :region_code
+              AND rn.date_id BETWEEN :from_date AND :to_date
+            GROUP BY $weekStartExpr, rn.date_id
+            WITH ROLLUP
             HAVING 
-                -- 월별 필터링: 
-                -- 1. DAY 레벨 (GROUPING(s.date_id) = 0): 요청한 월의 날짜만 포함
-                -- 2. WEEK_AVG/MONTH_TOTAL 레벨 (GROUPING(s.date_id) = 1): 모두 포함 (필터링하지 않음)
-                GROUPING(s.date_id) = 1 OR DATE_FORMAT(s.date_id, '%Y-%m') = :request_month
-            ORDER BY GROUPING(s.week_start) ASC, s.week_start ASC, GROUPING(s.date_id) ASC, s.date_id ASC
+                -- 전체 평균 레벨 제외
+                NOT (GROUPING($weekStartExpr) = 1 AND GROUPING(rn.date_id) = 1)
+            ORDER BY 
+                GROUPING($weekStartExpr) ASC, 
+                GROUPING(rn.date_id) ASC, 
+                MAX(rn.date_id) ASC
         ";
 
         try {
-            // 요청한 월 문자열 계산 (YYYY-MM 형식)
-            $requestMonth = date('Y-m', strtotime($fromDate));
-            
             $stmt = $this->db->prepare($sql);
             $stmt->bindValue(':region_code', $regionCode, \PDO::PARAM_STR);
             $stmt->bindValue(':from_date',   $fromDate,   \PDO::PARAM_STR);
             $stmt->bindValue(':to_date',     $toDate,     \PDO::PARAM_STR);
-            $stmt->bindValue(':from_date_sub', $fromDate, \PDO::PARAM_STR);
-            $stmt->bindValue(':to_date_sub',   $toDate,   \PDO::PARAM_STR);
-            $stmt->bindValue(':request_month', $requestMonth, \PDO::PARAM_STR);
             $stmt->execute();
 
             $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
