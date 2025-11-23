@@ -52,7 +52,7 @@ CREATE TABLE WeatherStatusDim (
 -- 1-4. Bookmark (즐겨찾기) 테이블
 CREATE TABLE Bookmark (
     bookmark_id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'PK. 즐겨찾기 ID',
-    
+    session_id VARCHAR(255) NOT NULL COMMENT '익명 사용자 식별자 (PHP 세션 ID)',
     region_code CHAR(5) NOT NULL COMMENT 'Region 테이블의 FK. 즐겨찾기 지역 코드',
     start_date DATE NOT NULL COMMENT 'DateDim 테이블의 FK. 즐겨찾기 시작 날짜',
     end_date DATE NOT NULL COMMENT 'DateDim 테이블의 FK. 즐겨찾기 종료 날짜',

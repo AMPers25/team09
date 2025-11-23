@@ -1,3 +1,6 @@
+-- 데이터베이스 생성 및 사용
+USE team09;
+
 DROP TABLE IF EXISTS Bookmark;
 DROP TABLE IF EXISTS AirQuality;
 DROP TABLE IF EXISTS Temperature;

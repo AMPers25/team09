@@ -3,48 +3,43 @@
  * File: src/controller/WeatherAlertCalendarController.php
  * Author: 황혜린
  * Description: 기능 2-4. 특정 월의 지역별 기상 특보 목록 조회 Controller
- * Last Updated: 2025-11-17
+ * Last Updated: 2025-11-21
  */
 
 namespace App\Controller;
 
+use App\Model\WeatherAlertCalendarModel;
+
 class WeatherAlertCalendarController
 {
-    /** @var \PDO */
-    private $dbConnection;
+    /** @var WeatherAlertCalendarModel */
+    private WeatherAlertCalendarModel $model;
 
-    public function __construct($dbConnection)
+    public function __construct(WeatherAlertCalendarModel $model)
     {
-        $this->dbConnection = $dbConnection;
+        $this->model = $model;
     }
 
     /**
-     * GET /api/alerts/calendar?region_code=XXXXX&year=YYYY&month=MM
-     *
-     * Response:
-     * {
-     *   "status": 200,
-     *   "message": "OK",
-     *   "data": [
-     *     { "alert_id": 1001, "date_id": "2025-10-03", "alert_time": "14:00:00", "alert_type": "폭우" }
-     *   ]
-     * }
+     * GET /api/calendar/alert/{region_code}/{year}/{month}
+     *  - path params로 월 지정
+     *  - 컨트롤러에서 월 시작/끝을 계산해 모델에 넘김
      */
-    public function getMonthlyAlertsAction(array $queryParams = []): void
+    public function getMonthlyAlertsAction(array $params = []): void
     {
-        $regionCode = $queryParams['region_code'] ?? null;
-        $yearParam  = $queryParams['year']        ?? null;
-        $monthParam = $queryParams['month']       ?? null;
+        $regionCode = $params['region_code'] ?? null;
+        $yearParam  = $params['year']        ?? null;
+        $monthParam = $params['month']       ?? null;
 
-        // 1) 필수 파라미터 검증
+        // 1) 필수값
         if (!$regionCode || !$yearParam || !$monthParam) {
             $this->sendErrorResponse(400, "필수 데이터(region_code, year, month)가 누락되었습니다.");
             return;
         }
 
-        // 2) 형식/범위 검증
-        if (!preg_match('/^\d{5}$/', $regionCode)) {
-            $this->sendErrorResponse(400, "region_code 형식이 올바르지 않습니다. (5자리)");
+        // 2) 검증
+        if (!preg_match('/^\d{3}$/', (string)$regionCode)) {
+            $this->sendErrorResponse(400, "region_code 형식이 올바르지 않습니다. (3자리)");
             return;
         }
         if (!preg_match('/^\d{4}$/', (string)$yearParam)) {
@@ -59,38 +54,30 @@ class WeatherAlertCalendarController
         $year  = (int)$yearParam;
         $month = (int)$monthParam;
 
+        // 3) 월 범위 계산 (PHP에서 처리)
+        $from = sprintf('%04d-%02d-01', $year, $month);
+        $to   = date('Y-m-t', strtotime($from)); // 그 달의 마지막 날
+
         try {
-            $model  = new \App\Model\WeatherAlertCalendarModel($this->dbConnection);
-            $data   = $model->getMonthlyAlerts($regionCode, $year, $month);
-
+            $data = $this->model->getMonthlyAlertsByRange($regionCode, $from, $to);
             $this->sendResponse(200, "OK", $data);
-
         } catch (\Exception $e) {
             error_log("Controller Error in getMonthlyAlertsAction: " . $e->getMessage());
             $this->sendErrorResponse(500, "기상 특보 조회 중 서버 내부 오류가 발생했습니다.");
         }
     }
 
-    /** 공통 성공 응답 */
     protected function sendResponse(int $status, string $message, array $data): void
     {
         header('Content-Type: application/json');
         http_response_code($status);
-        echo json_encode([
-            'status'  => $status,
-            'message' => $message,
-            'data'    => $data
-        ]);
+        echo json_encode(['status'=>$status,'message'=>$message,'data'=>$data]);
     }
 
-    /** 공통 오류 응답 */
     protected function sendErrorResponse(int $status, string $message): void
     {
         header('Content-Type: application/json');
         http_response_code($status);
-        echo json_encode([
-            'status'  => $status,
-            'message' => $message
-        ]);
+        echo json_encode(['status'=>$status,'message'=>$message]);
     }
 }

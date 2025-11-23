@@ -1,8 +1,8 @@
 <?php
 /**
  * File: src/core/Router.php
- * Author: 김연수 (sooooscode)
- * Date: 2025-11-19
+ * Author: 김연수 (sooooscode), 황혜린
+ * Date: 2025-11-21
  * Role: HTTP 요청 URI와 메소드를 기반으로 적절한 Controller 메소드를 찾아 연결(Dispatch)합니다.
  */
 
@@ -68,7 +68,6 @@ class Router
             $uri = '/' . $uri;
         }
 
-
         foreach ($this->routes as $route) {
             if ($route['method'] !== $httpMethod) {
                 continue;
@@ -103,6 +102,18 @@ class Router
                 // $matches 배열의 요소 수만큼만 키를 사용합니다.
                 $params = array_combine(array_slice($paramKeys, 0, count($matches)), $matches);
 
+                // 쿼리스트링/POST JSON 병합
+                if ($httpMethod === 'GET' || $httpMethod === 'DELETE') {
+                    // GET/DELETE는 쿼리스트링이 우선 적용되도록 (동일 키 충돌 시 쿼리로 덮어씀)
+                    $params = array_merge($_GET ?? [], $params);
+                } elseif ($httpMethod === 'POST' || $httpMethod === 'PUT' || $httpMethod === 'PATCH') {
+                    // JSON 우선, 아니면 form-urlencoded($_POST)
+                    $raw  = file_get_contents('php://input');
+                    $json = json_decode($raw, true);
+                    $body = is_array($json) ? $json : ($_POST ?? []);
+                    // POST/PUT/PATCH는 body가 path를 덮어씀(동일 키 충돌 시 body로 덮어씀)
+                    $params = array_merge($params, $body);
+                }
 
                 // Reflection을 사용하여 메소드를 호출하고 URL 변수를 전달합니다.
                 try {
