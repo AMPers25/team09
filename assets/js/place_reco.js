@@ -95,7 +95,7 @@
       const start_date = $start.value;
       const end_date = $end.value;
 
-      const res = await fetchJson(`/api/recommend/best-region/${start_date}/${end_date}`);
+      const res = await fetchJson(`/team09/api/recommend/best-region/${start_date}/${end_date}`);
       rows = res.data || [];
     } catch (e) {
       try {
@@ -122,14 +122,14 @@
     }
     if($empty) $empty.hidden = true;
 
-    $list.innerHTML = rows.map(r=>`
+    $list.innerHTML = rows.map((r, idx)=>`
       <li class="li-row" data-region="${r.region_code}">
         <button class="icon-btn star" title="즐겨찾기 추가" aria-label="즐겨찾기 추가">
           <i class="fa-regular fa-star"></i>
         </button>
 
         <div>
-          <div class="li-range">${r.rank}.  ${r.province ? `${r.province} ` : ''}${r.region_name}</div>
+          <div class="li-range">${idx + 1}.  ${r.province ? `${r.province} ` : ''}${r.region_name}</div>
         </div>
 
         <div></div>
@@ -176,7 +176,7 @@ async function onClickList(e){
 
     const isActive = starBtn.classList.contains('active');
 
-    // 🔻 이미 활성 상태면 = 삭제
+    // 이미 활성 상태면 = 삭제
     if (isActive) {
         // 1) UI를 먼저 비활성화(낙관적)
         starBtn.classList.remove('active');
@@ -184,23 +184,23 @@ async function onClickList(e){
 
         try {
             // B안: region_code + start_date + end_date로 삭제
-            const url = new URL(`${API_BASE}/api/bookmarks`);
+            const url = new URL(`/team09/api/bookmarks`, window.location.origin);
             url.searchParams.set('region_code', regionCode);
             url.searchParams.set('start_date', startDate);
             url.searchParams.set('end_date',   endDate);
 
-            const res = await fetch(url.toString(), { method: 'DELETE' });
-            if (!res.ok) throw new Error('delete failed');
+            const res = await fetch(url.toString(), { method: 'DELETE' , credentials: 'include'});
+            if (res.status !== 200 ) throw new Error('delete failed');
 
-            // localStorage에도 저장해뒀다면 같이 제거 (선택)
-            const key = 'bookmarks';
-            const cur = JSON.parse(localStorage.getItem(key) || '[]');
-            const next = cur.filter(b =>
-            !(String(b.region_code)===String(regionCode) &&
-            b.start_date===startDate &&
-            b.end_date===endDate)
-            );
-            localStorage.setItem(key, JSON.stringify(next));
+            // // localStorage에도 저장해뒀다면 같이 제거 (선택)
+            // const key = 'bookmarks';
+            // const cur = JSON.parse(localStorage.getItem(key) || '[]');
+            // const next = cur.filter(b =>
+            // !(String(b.region_code)===String(regionCode) &&
+            // b.start_date===startDate &&
+            // b.end_date===endDate)
+            // );
+            // localStorage.setItem(key, JSON.stringify(next));
         } catch (err) {
             // 실패 시 UI 롤백
             starBtn.classList.add('active');
@@ -210,7 +210,7 @@ async function onClickList(e){
         return;
     }
 
-    // 🔺 비활성 상태면 = 추가
+    // 비활성 상태면 = 추가
     starBtn.classList.add('active');
     starBtn.innerHTML = '<i class="fa-solid fa-star"></i>';
 
@@ -222,23 +222,28 @@ async function onClickList(e){
 
     try {
         // 즐겨찾기 추가 API (POST)
-        const r = await fetch(`${API_BASE}/api/bookmarks`, {
+        const r = await fetch(`/team09/api/bookmarks`, {
         method:'POST',
+        credentials: 'include',
         headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify(payload)
         });
-        if (!r.ok) throw new Error('save failed');
+
+        if (r.status !== 200 && r.status !== 201) {
+          throw new Error('save failed');
+        }
 
         // (선택) 서버가 bookmark_id를 반환한다면 여기서 li.dataset.id = ... 해도 됨
         // const resJson = await r.json();
         // if (resJson.bookmark_id) li.dataset.bookmarkId = resJson.bookmark_id;
 
-        // 로컬스토리지에도 같이 저장해두고 싶으면:
-        const key = 'bookmarks';
-        const cur = JSON.parse(localStorage.getItem(key) || '[]');
-        cur.push(payload);
-        localStorage.setItem(key, JSON.stringify(cur));
+        // // 로컬스토리지에도 같이 저장해두고 싶으면:
+        // const key = 'bookmarks';
+        // const cur = JSON.parse(localStorage.getItem(key) || '[]');
+        // cur.push(payload);
+        // localStorage.setItem(key, JSON.stringify(cur));
     } catch (err) {
+        console.error(err);
         // 실패 시 UI 롤백
         starBtn.classList.remove('active');
         starBtn.innerHTML = '<i class="fa-regular fa-star"></i>';
@@ -254,8 +259,48 @@ async function onClickList(e){
     setDates();
     bindGoButton();
 
+    // 1) 여행 적합 날짜 추천 데이터
     const rows = await loadData();
+
+    // 2) 즐겨찾기 목록 불러오기
+    let bookmarks = [];
+    try {
+      const bmRes = await fetchJson(`/team09/api/bookmarks`);
+      bookmarks = bmRes.data || [];
+    } catch (e) {
+      console.warn("즐겨찾기 목록 불러오기 실패:", e);
+    }
+
+    // 3) rows 와 bookmarks 매칭 후 'active' 설정
+    rows.forEach(r => {
+      const exists = bookmarks.some(bm =>
+        String(bm.region_code) === String(r.region_code) &&
+        bm.start_date === r.start_date &&
+        bm.end_date === r.end_date
+      );
+      r.isFavorite = exists;
+    });
+    // 4) 랜더링
     renderList(rows);
+
+    // 5) 렌더 후 별 UI 반영
+    document.querySelectorAll(".li-row").forEach(li => {
+      const start = li.dataset.start;
+      const end   = li.dataset.end;
+      const regionCode = li.dataset.region;
+
+      const matched = bookmarks.some(bm =>
+        bm.start_date === start &&
+        bm.end_date   === end &&
+        String(bm.region_code) === String(regionCode)
+      );
+
+      if (matched) {
+        const starBtn = li.querySelector(".star");
+        starBtn.classList.add("active");
+        starBtn.innerHTML = '<i class="fa-solid fa-star"></i>';
+      }
+    });
 
     $('#list').addEventListener('click', onClickList);
   })();

@@ -93,4 +93,7 @@ return function (\App\Core\Router $router) {
     // URL: /api/bookmarks/{bookmark_id} - 즐겨찾기 ID를 URL 경로로 받도록 수정
     $router->add('DELETE', '/api/bookmarks/{bookmark_id}',
         BookmarkController::class, 'deleteBookmarkAction');
+    // URL: /api/bookmarks?region_code=...&start_date=...&end_date=... 
+    $router->add('DELETE', '/api/bookmarks',
+    BookmarkController::class, 'deleteBookmarkAction');
 };
