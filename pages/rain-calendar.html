@@ -229,8 +229,8 @@
             const month = currentDate.getMonth() + 1;
 
             try {
-                // 새로운 API 엔드포인트: /api/calendar/rain/{region_code}/{year}/{month}
-                const apiUrl = `/team09/api/calendar/rain/${regionCode}/${year}/${month}`;
+                // 새로운 API 엔드포인트: /api/calendar/rain/{region_code}/{month}
+                const apiUrl = `/team09/api/calendar/rain/${regionCode}/${month}`;
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {

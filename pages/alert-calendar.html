@@ -250,7 +250,7 @@
             const month = currentDate.getMonth() + 1;
 
             try {
-                const apiUrl = `/team09/api/calendar/alert/${regionCode}/${year}/${month}`;
+                const apiUrl = `/team09/api/calendar/alert/${regionCode}/${month}`;
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {

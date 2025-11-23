@@ -21,19 +21,19 @@ class WeatherAlertCalendarController
     }
 
     /**
-     * GET /api/calendar/alert/{region_code}/{year}/{month}
+     * GET /api/calendar/alert/{region_code}/{month}
      *  - path params로 월 지정
      *  - 컨트롤러에서 월 시작/끝을 계산해 모델에 넘김
      */
     public function getMonthlyAlertsAction(array $params = []): void
     {
         $regionCode = $params['region_code'] ?? null;
-        $yearParam  = $params['year']        ?? null;
         $monthParam = $params['month']       ?? null;
+        $year = 2024; // 고정된 연도
 
         // 1) 필수값
-        if (!$regionCode || !$yearParam || !$monthParam) {
-            $this->sendErrorResponse(400, "필수 데이터(region_code, year, month)가 누락되었습니다.");
+        if (!$regionCode || !$monthParam) {
+            $this->sendErrorResponse(400, "필수 데이터(region_code, month)가 누락되었습니다.");
             return;
         }
 
@@ -42,16 +42,11 @@ class WeatherAlertCalendarController
             $this->sendErrorResponse(400, "region_code 형식이 올바르지 않습니다. (3자리)");
             return;
         }
-        if (!preg_match('/^\d{4}$/', (string)$yearParam)) {
-            $this->sendErrorResponse(400, "year 형식이 올바르지 않습니다. (YYYY)");
-            return;
-        }
         if (!ctype_digit((string)$monthParam) || (int)$monthParam < 1 || (int)$monthParam > 12) {
             $this->sendErrorResponse(400, "month 값이 올바르지 않습니다. (1~12)");
             return;
         }
 
-        $year  = (int)$yearParam;
         $month = (int)$monthParam;
 
         // 3) 월 범위 계산 (PHP에서 처리)

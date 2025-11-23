@@ -45,13 +45,13 @@ return function (\App\Core\Router $router) {
         TemperatureCalendarController::class, 'getDailyCalendar');
 
     // 2-3) 강수량 캘린더 조회
-    // URL: /api/calendar/rain/{region_code}/{year}/{month}
-    $router->get('/api/calendar/rain/{region_code}/{year}/{month}',
+    // URL: /api/calendar/rain/{region_code}/{month}
+    $router->get('/api/calendar/rain/{region_code}/{month}',
         WeatherRainRollupController::class, 'getRainRollupAction');
 
     // 2-4) 경보 캘린더 조회
-    // URL: /api/calendar/alert/{region_code}/{year}/{month}
-    $router->get('/api/calendar/alert/{region_code}/{year}/{month}',
+    // URL: /api/calendar/alert/{region_code}/{month}
+    $router->get('/api/calendar/alert/{region_code}/{month}',
         WeatherAlertCalendarController::class, 'getMonthlyAlertsAction');
 
 

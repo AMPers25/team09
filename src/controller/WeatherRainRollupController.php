@@ -21,19 +21,19 @@ class WeatherRainRollupController
     }
 
     /**
-     * GET /api/calendar/rain/{region_code}/{year}/{month}
-     *  - path params 로 받은 연/월을 이용해 [YYYY-MM-01 ~ YYYY-MM(마지막날)] 범위를 계산
+     * GET /api/calendar/rain/{region_code}/{month}
+     *  - path params 로 받은 월을 이용해 [2024-MM-01 ~ 2024-MM(마지막날)] 범위를 계산
      *  - Model::getRainRollup(region, from, to) 재사용
      */
     public function getRainRollupAction(array $params = []): void
     {
         $regionCode = $params['region_code'] ?? null;
-        $yearParam  = $params['year']        ?? null;
         $monthParam = $params['month']       ?? null;
+        $year = 2024; // 고정된 연도
 
         // 1) 필수값 점검
-        if (!$regionCode || !$yearParam || !$monthParam) {
-            $this->sendErrorResponse(400, "필수 데이터(region_code, year, month)가 누락되었습니다.");
+        if (!$regionCode || !$monthParam) {
+            $this->sendErrorResponse(400, "필수 데이터(region_code, month)가 누락되었습니다.");
             return;
         }
 
@@ -42,16 +42,11 @@ class WeatherRainRollupController
             $this->sendErrorResponse(400, "region_code 형식이 올바르지 않습니다. (3자리)");
             return;
         }
-        if (!preg_match('/^\d{4}$/', (string)$yearParam)) {
-            $this->sendErrorResponse(400, "year 형식이 올바르지 않습니다. (YYYY)");
-            return;
-        }
         if (!ctype_digit((string)$monthParam) || (int)$monthParam < 1 || (int)$monthParam > 12) {
             $this->sendErrorResponse(400, "month 값이 올바르지 않습니다. (1~12)");
             return;
         }
 
-        $year  = (int)$yearParam;
         $month = (int)$monthParam;
 
         // 3) 월 범위 계산
