@@ -51,7 +51,6 @@ class WeatherRainRollupModel
                 CASE 
                     WHEN GROUPING($weekStartExpr) = 0 AND GROUPING(rn.date_id) = 0 THEN 'DAY'
                     WHEN GROUPING($weekStartExpr) = 0 AND GROUPING(rn.date_id) = 1 THEN 'WEEK_AVG'
-                    ELSE 'UNKNOWN'
                 END AS level,
                 CASE 
                     WHEN GROUPING(rn.date_id) = 0 THEN DATE_FORMAT(rn.date_id, '%Y-%m-%d')

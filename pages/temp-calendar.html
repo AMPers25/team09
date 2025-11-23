@@ -287,17 +287,22 @@
 
         function transformToCalendarFormat(apiData, year, month) {
             const days = [];
-            let minTempSum = 0;
-            let maxTempSum = 0;
-            let validDaysCount = 0;
-            let monthMinTemp = Infinity;
-            let monthMaxTemp = -Infinity;
             let regionName = null;
+            let monthAvgTemp = null;
+            let monthMinTemp = null;
+            let monthMaxTemp = null;
 
-            apiData.forEach(item => {
+            apiData.forEach((item, index) => {
                 // region_name은 모든 항목에서 동일하므로 첫 번째 항목에서만 가져옴
                 if (!regionName && item.region_name) {
                     regionName = item.region_name;
+                }
+
+                // SQL에서 계산한 월별 집계 값은 첫 번째 항목에서만 가져옴
+                if (index === 0) {
+                    monthAvgTemp = item.month_avg_temp != null ? parseFloat(item.month_avg_temp) : null;
+                    monthMinTemp = item.month_min_temp != null ? parseFloat(item.month_min_temp) : null;
+                    monthMaxTemp = item.month_max_temp != null ? parseFloat(item.month_max_temp) : null;
                 }
 
                 const dateParts = item.date_id.split('-');
@@ -306,15 +311,6 @@
                 // min_temp와 max_temp를 숫자로 변환 및 유효성 검사
                 const minTemp = item.min_temp != null ? parseFloat(item.min_temp) : null;
                 const maxTemp = item.max_temp != null ? parseFloat(item.max_temp) : null;
-
-                // 유효한 숫자인 경우에만 평균 계산에 포함
-                if (minTemp != null && maxTemp != null && !isNaN(minTemp) && !isNaN(maxTemp)) {
-                    minTempSum += minTemp;
-                    maxTempSum += maxTemp;
-                    validDaysCount++;
-                    monthMinTemp = Math.min(monthMinTemp, minTemp);
-                    monthMaxTemp = Math.max(monthMaxTemp, maxTemp);
-                }
 
                 days.push({
                     day: day,
@@ -325,20 +321,15 @@
                 });
             });
 
-            // 실제 평균 계산 (유효한 데이터가 있을 때만)
-            const avgMinTemp = validDaysCount > 0 ? minTempSum / validDaysCount : null;
-            const avgMaxTemp = validDaysCount > 0 ? maxTempSum / validDaysCount : null;
-
             return {
                 year: year,
                 month: month,
                 region_code: regionCode,
                 region_name: regionName,
                 days: days,
-                avgMinTemp: avgMinTemp != null && !isNaN(avgMinTemp) ? Math.round(avgMinTemp) : null,
-                avgMaxTemp: avgMaxTemp != null && !isNaN(avgMaxTemp) ? Math.round(avgMaxTemp) : null,
-                monthMinTemp: monthMinTemp !== Infinity && !isNaN(monthMinTemp) ? Math.round(monthMinTemp) : null,
-                monthMaxTemp: monthMaxTemp !== -Infinity && !isNaN(monthMaxTemp) ? Math.round(monthMaxTemp) : null
+                monthAvgTemp: monthAvgTemp != null && !isNaN(monthAvgTemp) ? Math.round(monthAvgTemp) : null,
+                monthMinTemp: monthMinTemp != null && !isNaN(monthMinTemp) ? Math.round(monthMinTemp) : null,
+                monthMaxTemp: monthMaxTemp != null && !isNaN(monthMaxTemp) ? Math.round(monthMaxTemp) : null
             };
         }
 
@@ -372,17 +363,11 @@
 
             const regionCodeForContext = calendarData.region_code || regionCode;
             
-            // 월평균 기온 계산 (실제 평균 계산)
-            const avgMinTemp = calendarData.avgMinTemp != null && !isNaN(calendarData.avgMinTemp) ? calendarData.avgMinTemp : null;
-            const avgMaxTemp = calendarData.avgMaxTemp != null && !isNaN(calendarData.avgMaxTemp) ? calendarData.avgMaxTemp : null;
-            
-            let avgTemp = '--';
-            if (avgMinTemp != null && avgMaxTemp != null) {
-                avgTemp = Math.round((avgMinTemp + avgMaxTemp) / 2);
-            }
-            
+            // SQL에서 계산한 월평균 기온 사용
+            const avgTemp = calendarData.monthAvgTemp != null && !isNaN(calendarData.monthAvgTemp) ? calendarData.monthAvgTemp : '--';
             document.getElementById('avgTemp').textContent = `${avgTemp}°`;
             
+            // SQL에서 계산한 월최소/월최대 기온 사용
             const minTemp = calendarData.monthMinTemp != null && !isNaN(calendarData.monthMinTemp) ? calendarData.monthMinTemp : '--';
             const maxTemp = calendarData.monthMaxTemp != null && !isNaN(calendarData.monthMaxTemp) ? calendarData.monthMaxTemp : '--';
             document.getElementById('minMaxTemp').textContent = `${minTemp}°/${maxTemp}°`;

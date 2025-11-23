@@ -32,7 +32,25 @@ class TemperatureCalendarModel {
                 t.avg_temp,
                 t.min_temp,
                 t.max_temp,
-                ws.status_name
+                ws.status_name,
+                (SELECT ROUND(AVG(t2.avg_temp), 1) 
+                 FROM Temperature t2 
+                 JOIN DateDim d2 ON t2.date_id = d2.date_id 
+                 WHERE t2.region_code = t.region_code 
+                   AND YEAR(d2.date_id) = 2024 
+                   AND d2.month = d.month) AS month_avg_temp,
+                (SELECT MIN(t2.min_temp) 
+                 FROM Temperature t2 
+                 JOIN DateDim d2 ON t2.date_id = d2.date_id 
+                 WHERE t2.region_code = t.region_code 
+                   AND YEAR(d2.date_id) = 2024 
+                   AND d2.month = d.month) AS month_min_temp,
+                (SELECT MAX(t2.max_temp) 
+                 FROM Temperature t2 
+                 JOIN DateDim d2 ON t2.date_id = d2.date_id 
+                 WHERE t2.region_code = t.region_code 
+                   AND YEAR(d2.date_id) = 2024 
+                   AND d2.month = d.month) AS month_max_temp
             FROM
                 Temperature t
             JOIN
