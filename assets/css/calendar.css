@@ -113,13 +113,13 @@ body {
     color: #666;
 }
 
-.year-display,
 .month-display,
 .nav-arrow {
-    background: #EFEFEF;
+    background: #e7f3fb;
     border-radius: 999px;
     padding: 6px 14px;
-    font-size: 0.9em;
+    font-size: 1.2em;
+    font-weight: 700;
     color: #666;
     display: inline-flex;
     align-items: center;
@@ -127,7 +127,11 @@ body {
 }
 
 .year-display {
-    font-weight: 500;
+    padding: 6px 14px;
+    font-size: 1.2em;
+    color: #666;
+    display: inline-flex;
+    justify-content: center;
 }
 
 .month-display {
@@ -228,7 +232,7 @@ body {
 }
 
 .week-averages-title {
-    background: #FFDFDF;
+    background: #e7f3fb;
     padding: 8px 0;
     text-align: center;
     font-weight: 500;
@@ -269,7 +273,7 @@ body {
 }
 
 .day-header {
-    background: #FFDFDF;
+    background: #e7f3fb;
     padding: 8px 0;
     text-align: center;
     font-weight: 500;
@@ -359,16 +363,17 @@ body {
 }
 
 .day-cell.alert-active {
-    background: linear-gradient(180deg, rgba(255, 252, 242, 0.7) 0%, rgba(255, 252, 242, 0.9) 100%);
+    background: linear-gradient(180deg, rgba(254, 255, 233, 0.907) 0%, rgba(252, 251, 247, 0.94) 100%);
     border: 1px solid rgba(255, 252, 242, 0.4);
 }
 
-.day-cell.alert-active .day-number {
-    color: #b45309;
+.day-cell.alert-active {
+    color: #e3c035;
 }
 
 .day-cell.alert-active .temp-text {
-    color: #92400e;
+    color: #bf991d;
+    font-weight: 700;
 }
 
 /* 반응형 디자인 */

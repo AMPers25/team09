@@ -26,6 +26,9 @@ class WeatherAlertCalendarModel
      *  - date_id    : 'YYYY-MM-DD'
      *  - alert_time : 'HH:MM:SS'
      *  - alert_type : string
+     *  - status_code: string (날씨 상태 코드)
+     *  - status_name: string (날씨 상태)
+     *  - is_holiday : int (공휴일 여부)
      *
      * @param string $regionCode 3자리 지역 코드
      * @param string $fromDate   YYYY-MM-DD (해당 월 1일)
@@ -35,21 +38,30 @@ class WeatherAlertCalendarModel
      */
     public function getMonthlyAlertsByRange(string $regionCode, string $fromDate, string $toDate): array
     {
+        // 해당 월의 모든 날짜에 대해 weather status 정보를 가져오고, alert 정보는 LEFT JOIN으로 처리
         $sql = "
             SELECT
                 WA.alert_id,
-                DATE_FORMAT(WA.date_id, '%Y-%m-%d')     AS date_id,
+                DATE_FORMAT(D.date_id, '%Y-%m-%d')     AS date_id,
                 TIME_FORMAT(WA.alert_time, '%H:%i:%s')  AS alert_time,
-                WA.alert_type
-            FROM WeatherAlert WA
-            WHERE WA.region_code = :region_code
-              AND WA.date_id BETWEEN :from_date AND :to_date
-            ORDER BY WA.date_id ASC, WA.alert_time ASC, WA.alert_id ASC
+                WA.alert_type,
+                R.status_code,
+                WS.status_name,
+                D.is_holiday
+            FROM DateDim D
+            LEFT JOIN WeatherAlert WA ON WA.region_code = :region_code_alert 
+                AND WA.date_id = D.date_id
+            LEFT JOIN Rain R ON R.region_code = :region_code_rain 
+                AND R.date_id = D.date_id
+            LEFT JOIN WeatherStatusDim WS ON WS.status_code = R.status_code
+            WHERE D.date_id BETWEEN :from_date AND :to_date
+            ORDER BY D.date_id ASC, WA.alert_time ASC, WA.alert_id ASC
         ";
 
         try {
             $stmt = $this->db->prepare($sql);
-            $stmt->bindValue(':region_code', $regionCode, \PDO::PARAM_STR);
+            $stmt->bindValue(':region_code_alert', $regionCode, \PDO::PARAM_STR);
+            $stmt->bindValue(':region_code_rain', $regionCode, \PDO::PARAM_STR);
             $stmt->bindValue(':from_date',   $fromDate,   \PDO::PARAM_STR);
             $stmt->bindValue(':to_date',     $toDate,     \PDO::PARAM_STR);
             $stmt->execute();
@@ -62,6 +74,9 @@ class WeatherAlertCalendarModel
                 $r['date_id']    = $r['date_id']    ?? null;
                 $r['alert_time'] = $r['alert_time'] ?? null;
                 $r['alert_type'] = $r['alert_type'] ?? null;
+                $r['status_code'] = $r['status_code'] ?? null;
+                $r['status_name'] = $r['status_name'] ?? null;
+                $r['is_holiday'] = isset($r['is_holiday']) ? (int)$r['is_holiday'] : 0;
             }
             unset($r);
 
