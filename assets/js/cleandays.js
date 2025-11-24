@@ -9,6 +9,7 @@
     if(!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();
   });
+  const REGIONS = window.REGION_OPTIONS || [];
 
   // -------------------------------
   // 1) 쿼리 파라미터 읽기/쓰기
@@ -22,10 +23,8 @@
   const $region = $('#region');
 
   async function fillRegions(){
-    // placeholder 남겨두고 뒤에 붙이기
     while($region.options.length>1) $region.remove(1);
-    const data = await fetchJson('../pages/mock/regions_20.json');
-    data.forEach(r=>{
+    REGIONS.forEach(r=>{
       const opt = document.createElement('option');
       opt.value = r.code;
       opt.textContent = r.province ? `${r.province} ${r.name}` : r.name;
@@ -71,25 +70,13 @@
   // 3) 데이터 로드
   //    API: GET /api/recommend/air-quality/{region_code}
   //    응답: { status, message, data:[{rank,start_date,end_date,streak_days,pm10_avg}] }
-  //    실패 시 mock 사용 (../pages/mock/clean_days_샘플.json)
   // -------------------------------
   async function loadData(){
-    let rows = [];
-    try{
-      const regionCode = $region.value;  // 예: 108
-      if (!regionCode) return [];
+    const regionCode = $region.value;
+    if (!regionCode) return [];
 
-      const res = await fetchJson(`/team09/api/recommend/air-quality/${regionCode}`);
-
-      rows = res.data || [];
-    }catch(e){
-      // mock 폴백 (파일명을 고정하거나, 필요하면 region코드에 맞춰 분기)
-      try{
-        const mock = await fetchJson('mock/clean_days_sample.json');
-        rows = Array.isArray(mock.data) ? mock.data : mock;
-      }catch{ rows = []; }
-    }
-    return rows;
+    const res = await fetchJson(`/team09/api/recommend/air-quality/${regionCode}`);
+    return res.data || [];
   }
 
   // -------------------------------
@@ -137,11 +124,10 @@
     if (e.target.closest('.cal')){
       const start = li.dataset.start;
       const dt = new Date(start);
-      const y = dt.getFullYear();
       const m = String(dt.getMonth()+1).padStart(2,'0');
       const q = new URLSearchParams();
-      if (has($region.value)) q.set('region', $region.value);
-      q.set('year', y); q.set('month', m);
+      if (has($region.value)) q.set('region_code', $region.value);
+      q.set('month', m);
       location.href = `temp-calendar.html?${q.toString()}`; 
       return;
     }
@@ -176,15 +162,6 @@
         const res = await fetchJson(url.toString(), { method: 'DELETE', credentials: 'include' });
         if (res.status !== 200) throw new Error('delete failed');
 
-        // // (선택) mock 로컬스토리지에도 저장해뒀다면 같이 제거
-        // const key  = 'bookmarks';
-        // const list = JSON.parse(localStorage.getItem(key) || '[]');
-        // const next = list.filter(x =>
-        //   !(String(x.region_code) === String(regionCode) &&
-        //     x.start_date === start &&
-        //     x.end_date   === end)
-        // );
-        // localStorage.setItem(key, JSON.stringify(next));
       } catch (err) {
         // 서버 삭제 실패 시 UI 롤백
         starBtn.classList.add('active');
@@ -220,7 +197,7 @@
       // 여기서 li.dataset.id = res.bookmark_id 같은 식으로 저장해둘 수도 있음.
     }catch(err){
       console.error(err);
-      // 서버 저장 실패 시 UI 롤백 + mock 저장(선택)
+      // 서버 저장 실패 시 UI 롤백
       starBtn.classList.remove('active');
       starBtn.innerHTML = '<i class="fa-regular fa-star"></i>';
 
@@ -243,8 +220,15 @@
     await fillRegions();
     bindGoButton();
 
-    // 1) 여행 적합 날짜 추천 데이터
-    const rows = await loadData();
+    let rows = [];
+    try {
+      rows = await loadData();
+    } catch (err) {
+      console.error('클린데이 API 호출 실패:', err);
+      alert('클린데이 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+      renderList([]);
+      return;
+    }
 
     // 2) 즐겨찾기 목록 불러오기
     let bookmarks = [];

@@ -7,6 +7,12 @@
      if(!r.ok) throw new Error(`HTTP ${r.status}`);
      return r.json();
     });
+    const REGION_MAP = Object.fromEntries(
+      (window.REGION_OPTIONS || []).map(r => [
+        String(r.code),
+        r.province ? `${r.province} ${r.name}` : r.name
+      ])
+    );
 
     // // 간단한 JSON 요청(DELETE 등)
     // async function apiJSON(method, url, body){
@@ -18,17 +24,6 @@
     //   // 서버가 항상 JSON을 주지 않을 수 있으니 예외 처리
     //   try { return await r.json(); } catch { return { ok: r.ok }; }
     // }
-
-    // --- region_code → region_name 매핑 캐시 ---
-    let REGION_MAP = null;
-    async function getRegionMap(){
-      if (REGION_MAP) return REGION_MAP;
-      const regions = await fetchJson('mock/regions_20.json'); // [{code,name,province}]
-     REGION_MAP = Object.fromEntries(
-      regions.map(r => [ String(r.code), (r.province ? `${r.province} ${r.name}` : r.name) ])
-     );
-    return REGION_MAP;
-    }
 
     /** 날짜 YYYY-MM-DD → YYYY/MM/DD */
     function fmt(dateStr){
@@ -67,36 +62,19 @@
     const $list  = qs('#bmList');
     const $empty = qs('#empty');
 
-    // 1) 서버 API 우선
     let data = [];
     try {
-        // 계약: GET /api/bookmarks → { ok:true, data:[...] }
         const res = await fetchJson(`/team09/api/bookmarks`);
-        if (res && (res.ok ?? true) && Array.isArray(res.data)) {
-           data = res.data;
-        } else {
-        throw new Error('Invalid API response');
-        }
-    } catch {
-        // 2) 실패 시 mock
-        try {
-        const mock = await fetchJson('mock/bookmarks.json'); // {ok:true,data:[...]} or [...]
-        data = Array.isArray(mock) ? mock : (mock.data || []);
-        } catch {
+        data = Array.isArray(res.data) ? res.data : [];
+    } catch (err) {
+        console.error('즐겨찾기 목록 API 오류:', err);
         data = [];
-        }
     }
 
-    // region_name 보강
-    try {
-        const map = await getRegionMap();
-        data = data.map(r => ({
+    data = data.map(r => ({
         ...r,
-        region_name: map[String(r.region_code)] || String(r.region_code)
-        }));
-    } catch {
-        // 이름 매핑 실패 시 코드 그대로 노출
-    }
+        region_name: REGION_MAP[String(r.region_code)] || String(r.region_code)
+    }));
 
     renderList(data);
 
@@ -120,7 +98,7 @@
         const li = btn.closest('.bm-item');
         if (!li) return;
 
-        const id     = li.dataset.id;    // 서버 bookmark_id (없을 수도 있음: mock)
+        const id     = li.dataset.id;
         // const region = li.dataset.region;
         // const start  = li.dataset.start;
         // const end    = li.dataset.end;
@@ -144,17 +122,6 @@
             });
             if (res.status !== 200 ) throw new Error('delete failed');
             } 
-            // else {
-            // // mock/로컬스토리지 삭제 시도(선택)
-            // const key = 'bookmarks';
-            // const list = JSON.parse(localStorage.getItem(key) || '[]');
-            // const next = list.filter(x =>
-            //     !(String(x.region_code)===String(region) &&
-            //     x.start_date===start &&
-            //     x.end_date===end)
-            // );
-            // localStorage.setItem(key, JSON.stringify(next));
-            // }
         } catch (err) {
             // 실패 시 복구
             if (savedNextSibling) parent.insertBefore(li, savedNextSibling);

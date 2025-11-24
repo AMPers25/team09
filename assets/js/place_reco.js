@@ -90,22 +90,12 @@
   //    
   // -------------------------------
   async function loadData() {
-    let rows = [];
-    try {
-      const start_date = $start.value;
-      const end_date = $end.value;
+    const start_date = $start.value;
+    const end_date = $end.value;
+    if (!has(start_date) || !has(end_date)) return [];
 
-      const res = await fetchJson(`/team09/api/recommend/best-region/${start_date}/${end_date}`);
-      rows = res.data || [];
-    } catch (e) {
-      try {
-        const mock = await fetchJson('mock/place_reco_sample.json');
-        rows = Array.isArray(mock.data) ? mock.data : mock;
-      } catch {
-        rows = [];
-      }
-    }
-    return rows;
+    const res = await fetchJson(`/team09/api/recommend/best-region/${start_date}/${end_date}`);
+    return res.data || [];
   }
 
   // -------------------------------
@@ -155,12 +145,11 @@ async function onClickList(e){
     // 5-a) 캘린더 이동
     if (e.target.closest('.cal')){
       const base = startDate ? new Date(startDate) : new Date();
-      const y = base.getFullYear();
       const m = String(base.getMonth()+1).padStart(2,'0');
       const q = new URLSearchParams();
-      if (has(regionCode)) q.set('region', regionCode);
-      q.set('year', y); q.set('month', m);
-      location.href = `calendar_temp.html?${q.toString()}`; // 한나님이 쓰는 파일명으로 맞춰서 변경 !!!!!!!
+      if (has(regionCode)) q.set('region_code', regionCode);
+      q.set('month', m);
+      location.href = `temp-calendar.html?${q.toString()}`; // 한나님이 쓰는 파일명으로 맞춰서 변경 !!!!!!!
       return;
     }
 
@@ -259,8 +248,15 @@ async function onClickList(e){
     setDates();
     bindGoButton();
 
-    // 1) 여행 적합 날짜 추천 데이터
-    const rows = await loadData();
+    let rows = [];
+    try {
+      rows = await loadData();
+    } catch (err) {
+      console.error('여행 적합 지역 API 호출 실패:', err);
+      alert('여행 적합 지역 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+      renderList([]);
+      return;
+    }
 
     // 2) 즐겨찾기 목록 불러오기
     let bookmarks = [];
