@@ -139,7 +139,7 @@
       const y = dt.getFullYear();
       const m = String(dt.getMonth()+1).padStart(2,'0');
       const q = new URLSearchParams();
-      if (has($region.value)) q.set('region', $region.value);
+      if (has($region.value)) q.set('region_code', $region.value);
       q.set('year', y); q.set('month', m);
       location.href = `calendar_temp.html?${q.toString()}`; // 한나님이 쓰는 파일명으로 맞춰서 변경 !!!!!!!
       return;

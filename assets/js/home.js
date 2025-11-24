@@ -133,7 +133,7 @@
     // - 지역 O, 날짜 X → 지역추천 비활성 / 캘린더·날짜추천 활성
     // - 지역 X, 날짜 O → 날짜추천 비활성 / 캘린더·지역추천 활성
     // - 지역 O, 날짜 O → 모두 활성
-    if ($btnCalendar)  $btnCalendar.disabled  = !(regionOn || datesOn);
+    if ($btnCalendar)  $btnCalendar.disabled  = !(regionOn && datesOn);
     if ($btnDateReco)  $btnDateReco.disabled  = !regionOn;
     if ($btnPlaceReco) $btnPlaceReco.disabled = !datesOn || sameDate;
   }
