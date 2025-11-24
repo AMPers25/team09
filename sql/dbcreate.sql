@@ -7,19 +7,6 @@
 -- 데이터베이스 사용자 ID, 비밀번호, DB 이름은 프로젝트 요구사항 3-(1)에 따라 'team09'로 설정
 -- =======================================================================================
 
--- 데이터베이스 생성 및 사용
-CREATE DATABASE IF NOT EXISTS team09;
-USE team09;
-
--- 2. team09 사용자 생성 (비밀번호: team09)
-CREATE USER IF NOT EXISTS 'team09'@'localhost' IDENTIFIED BY 'team09';
-
--- 3. team09 사용자에게 team09 데이터베이스에 대한 모든 권한 부여
-GRANT ALL PRIVILEGES ON team09.* TO 'team09'@'localhost';
-
--- 4. 권한 테이블 새로고침
-FLUSH PRIVILEGES;
-
 -- ***********************************************
 -- 1. 차원 테이블 (Dimensions)
 -- ***********************************************
