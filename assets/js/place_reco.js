@@ -90,22 +90,12 @@
   //    
   // -------------------------------
   async function loadData() {
-    let rows = [];
-    try {
-      const start_date = $start.value;
-      const end_date = $end.value;
+    const start_date = $start.value;
+    const end_date = $end.value;
+    if (!has(start_date) || !has(end_date)) return [];
 
-      const res = await fetchJson(`/team09/api/recommend/best-region/${start_date}/${end_date}`);
-      rows = res.data || [];
-    } catch (e) {
-      try {
-        const mock = await fetchJson('mock/place_reco_sample.json');
-        rows = Array.isArray(mock.data) ? mock.data : mock;
-      } catch {
-        rows = [];
-      }
-    }
-    return rows;
+    const res = await fetchJson(`/team09/api/recommend/best-region/${start_date}/${end_date}`);
+    return res.data || [];
   }
 
   // -------------------------------
@@ -258,8 +248,15 @@ async function onClickList(e){
     setDates();
     bindGoButton();
 
-    // 1) 여행 적합 날짜 추천 데이터
-    const rows = await loadData();
+    let rows = [];
+    try {
+      rows = await loadData();
+    } catch (err) {
+      console.error('여행 적합 지역 API 호출 실패:', err);
+      alert('여행 적합 지역 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+      renderList([]);
+      return;
+    }
 
     // 2) 즐겨찾기 목록 불러오기
     let bookmarks = [];
