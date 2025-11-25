@@ -160,7 +160,7 @@ async function onClickList(e){
       const q = new URLSearchParams();
       if (has(regionCode)) q.set('region', regionCode);
       q.set('year', y); q.set('month', m);
-      location.href = `calendar_temp.html?${q.toString()}`; // 한나님이 쓰는 파일명으로 맞춰서 변경 !!!!!!!
+      location.href = `temp-calendar.html?${q.toString()}`; // 한나님이 쓰는 파일명으로 맞춰서 변경 !!!!!!!
       return;
     }
 

@@ -107,7 +107,7 @@
     if($empty) $empty.hidden = true;
 
     $list.innerHTML = rows.map((r, idx)=>`
-      <li class="li-row" data-start="${r.start_date}" data-end="${r.end_date}">
+      <li class="li-row" data-region="${r.region_code}" data-start="${r.start_date}" data-end="${r.end_date}">
         <button class="icon-btn star" title="즐겨찾기 추가" aria-label="즐겨찾기 추가">
           <i class="fa-regular fa-star"></i>
         </button>
@@ -138,10 +138,18 @@
       const dt = new Date(start);
       const y = dt.getFullYear();
       const m = String(dt.getMonth()+1).padStart(2,'0');
+
+      let regionParam = null;
+
+      if ($region && has($region.value)) {
+        regionParam = $region.value;
+      } else if (li.dataset.region) {
+        regionParam = li.dataset.region;
+      }
       const q = new URLSearchParams();
-      if (has($region.value)) q.set('region', $region.value);
+      q.set('region', regionParam);
       q.set('year', y); q.set('month', m);
-      location.href = `calendar_temp.html?${q.toString()}`; // 한나님이 쓰는 파일명으로 맞춰서 변경 !!!!!!!
+      location.href = `temp-calendar.html?${q.toString()}`; // 한나님이 쓰는 파일명으로 맞춰서 변경 !!!!!!!
       return;
     }
 
