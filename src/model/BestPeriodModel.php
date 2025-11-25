@@ -29,7 +29,7 @@ class BestPeriodModel {
                 ranking_data.week_start_date AS start_date,
                 DATE_ADD(ranking_data.week_start_date, INTERVAL 6 DAY) AS end_date,
                 ranking_data.avg_ti_score,
-                ranking_data.ti_rank AS rank
+                ranking_data.ti_rank AS `rank`
             FROM
                 (
                     SELECT
@@ -45,7 +45,7 @@ class BestPeriodModel {
                     WHERE TI.region_code = :regionCode
                       AND TI.date_id BETWEEN DATE('2024-01-01') AND DATE('2024-12-31')
                     GROUP BY
-                        TI.region_code, week_start_date
+                        TI.region_code, DATE_SUB(TI.date_id, INTERVAL DAYOFWEEK(TI.date_id) - 2 DAY)
                 ) AS ranking_data
             WHERE ranking_data.ti_rank <= 5
             ORDER BY ranking_data.ti_rank ASC;
