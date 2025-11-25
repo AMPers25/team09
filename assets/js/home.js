@@ -76,13 +76,22 @@
     $region.innerHTML = '<option value="" disabled selected>지역 선택</option>';
   }
 
-  const regions = window.REGION_OPTIONS || [];
-  regions.forEach(r=>{
-    const opt = document.createElement('option');
-    opt.value = r.code;         // 내부 값(코드)
-    opt.textContent = r.province ? `${r.province} ${r.name}` : r.name;   // 사용자 표시명
-    $region.appendChild(opt);
-  });
+  try {
+    const regions = await fetchJson('mock/regions_20.json'); //  [ {code, name, province} ]
+    regions.forEach(r=>{
+      const opt = document.createElement('option');
+      opt.value = r.code;         // 내부 값(코드)
+      opt.textContent = r.province ? `${r.province} ${r.name}` : r.name;   // 사용자 표시명
+      $region.appendChild(opt);
+    });
+  } catch (e) {
+    console.error('⚠️ 지역 목록 로드 실패:', e);
+    // 최소 fallback
+    if ($region.options.length <= 1) {
+      $region.insertAdjacentHTML('beforeend',
+        '<option value="108">서울</option><option value="159">부산</option>');
+    }
+  }
 
   // 3) 인기 조회 지역 Top5 (실제 API 연동)
   const $popularList = qs('#popularList');
@@ -124,7 +133,7 @@
     // - 지역 O, 날짜 X → 지역추천 비활성 / 캘린더·날짜추천 활성
     // - 지역 X, 날짜 O → 날짜추천 비활성 / 캘린더·지역추천 활성
     // - 지역 O, 날짜 O → 모두 활성
-    if ($btnCalendar)  $btnCalendar.disabled  = !(regionOn && datesOn);
+    if ($btnCalendar)  $btnCalendar.disabled  = !(regionOn || datesOn);
     if ($btnDateReco)  $btnDateReco.disabled  = !regionOn;
     if ($btnPlaceReco) $btnPlaceReco.disabled = !datesOn || sameDate;
   }
