@@ -158,9 +158,9 @@ async function onClickList(e){
       const y = base.getFullYear();
       const m = String(base.getMonth()+1).padStart(2,'0');
       const q = new URLSearchParams();
-      if (has(regionCode)) q.set('region', regionCode);
+      if (has(regionCode)) q.set('region_code', regionCode);
       q.set('year', y); q.set('month', m);
-      location.href = `calendar_temp.html?${q.toString()}`; // 한나님이 쓰는 파일명으로 맞춰서 변경 !!!!!!!
+      location.href = `temp-calendar.html?${q.toString()}`;
       return;
     }
 
