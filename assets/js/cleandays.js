@@ -137,7 +137,6 @@
     if (e.target.closest('.cal')){
       const start = li.dataset.start;
       const dt = new Date(start);
-      const y = dt.getFullYear();
       const m = String(dt.getMonth()+1).padStart(2,'0');
 
       let regionParam = null;
@@ -154,8 +153,10 @@
         return;
       }
       const q = new URLSearchParams();
-      q.set('region', regionParam);
-      q.set('year', y); q.set('month', m);
+
+      if (has($region.value)) q.set('region_code', $region.value);
+      q.set('month', m);
+
       location.href = `temp-calendar.html?${q.toString()}`; 
       return;
     }
