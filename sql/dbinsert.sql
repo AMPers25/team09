@@ -91,8 +91,8 @@ WHERE date_id IN (
 
 INSERT INTO WeatherStatusDim (status_code, status_name) VALUES
 ('90', '맑음'),
-('91', '구름조금'),
-('92', '구름많음'),
+('91', '구름 조금'),
+('92', '구름 많음'),
 ('93', '흐림'),
 ('01', '비'),
 ('05', '눈');
