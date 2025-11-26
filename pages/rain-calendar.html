@@ -66,7 +66,7 @@
 
         // URL 파라미터에서 region_code와 month 읽기
         const urlParams = new URLSearchParams(window.location.search);
-        const regionCode = urlParams.get('region_code') || urlParams.get('region') || '';
+        const regionCode = urlParams.get('region_code') || '';
         const monthParam = urlParams.get('month');
         const initialMonth = monthParam ? parseInt(monthParam, 10) - 1 : new Date().getMonth();
         

@@ -1,7 +1,7 @@
 <?php
 /**
  * File: src/model/WeatherRainRollupModel.php
- * Author: 황혜린, 강한나
+ * Author: 황혜린, 강한나, 강리현
  * Description: 기능 2-3. 특정 지역/기간의 일별 강수량 + 월 합계(ROLLUP) 조회 Model
  * Last Updated: 2025-11-17
  */
@@ -44,58 +44,57 @@ class WeatherRainRollupModel
         // 주별 평균은 해당 월의 날짜만으로 계산 (전달/다음달 고려하지 않음)
         // 월 평균은 프론트엔드에서 일별 데이터로 계산
         // 주의: GROUPING 함수는 GROUP BY 절의 표현식과 정확히 일치해야 함
-        $weekStartExpr = "CASE WHEN DAYOFWEEK(rn.date_id) = 1 THEN DATE_SUB(rn.date_id, INTERVAL 6 DAY) ELSE DATE_SUB(rn.date_id, INTERVAL DAYOFWEEK(rn.date_id) - 2 DAY) END";
+        
         
         $sql = "
             SELECT
                 CASE 
-                    WHEN GROUPING($weekStartExpr) = 0 AND GROUPING(rn.date_id) = 0 THEN 'DAY'
-                    WHEN GROUPING($weekStartExpr) = 0 AND GROUPING(rn.date_id) = 1 THEN 'WEEK_AVG'
+                    WHEN rn.date_id IS NOT NULL THEN 'DAY'
+                    ELSE 'WEEK_AVG'
                 END AS level,
+    
+                rn.date_id AS date_id,
+                DATE_FORMAT(rn.date_id, '%Y-%m') AS ym,
+    
                 CASE 
-                    WHEN GROUPING(rn.date_id) = 0 THEN DATE_FORMAT(rn.date_id, '%Y-%m-%d')
-                    ELSE NULL
-                END AS date_id,
-                CASE 
-                    WHEN GROUPING(rn.date_id) = 0 THEN DATE_FORMAT(rn.date_id, '%Y-%m')
-                    WHEN GROUPING($weekStartExpr) = 0 THEN DATE_FORMAT($weekStartExpr, '%Y-%m')
-                    ELSE NULL
-                END AS ym,
-                CASE 
-                    WHEN GROUPING($weekStartExpr) = 0 AND GROUPING(rn.date_id) = 1 THEN DATE_FORMAT($weekStartExpr, '%Y-%m-%d')
+                    WHEN rn.date_id IS NULL THEN DATE_FORMAT(week_start, '%Y-%m-%d')
                     ELSE NULL
                 END AS week_start,
+
                 CASE 
-                    WHEN GROUPING($weekStartExpr) = 0 AND GROUPING(rn.date_id) = 1 THEN ROUND(AVG(COALESCE(rn.daily_rainfall, 0)), 1)
-                    ELSE ROUND(SUM(COALESCE(rn.daily_rainfall, 0)), 1)
+                    WHEN rn.date_id IS NULL THEN ROUND(AVG(rn.daily_rainfall), 1)
+                    ELSE ROUND(SUM(rn.daily_rainfall), 1)
                 END AS rainfall_mm,
-                CASE 
-                    WHEN GROUPING(rn.date_id) = 0 THEN MAX(r.region_name)
-                    ELSE NULL
-                END AS region_name,
-                CASE 
-                    WHEN GROUPING(rn.date_id) = 0 THEN MAX(d.is_holiday)
-                    ELSE NULL
-                END AS is_holiday,
-                CASE 
-                    WHEN GROUPING(rn.date_id) = 0 THEN MAX(ws.status_name)
-                    ELSE NULL
-                END AS status_name
-            FROM Rain rn
+
+                r.region_name,
+                d.is_holiday,
+                ws.status_name
+
+            FROM (
+                SELECT
+                    rn.*,
+                    -- 주 시작일 계산 (월요일 기준)
+                    CASE WHEN DAYOFWEEK(rn.date_id) = 1 
+                        THEN DATE_SUB(rn.date_id, INTERVAL 6 DAY)
+                        ELSE DATE_SUB(rn.date_id, INTERVAL DAYOFWEEK(rn.date_id) - 2 DAY)
+                    END AS week_start
+                FROM Rain rn
+                WHERE rn.region_code = :region_code
+                    AND rn.date_id BETWEEN :from_date AND :to_date
+            ) rn
             JOIN Region r ON r.region_code = rn.region_code
             JOIN DateDim d ON d.date_id = rn.date_id
             LEFT JOIN WeatherStatusDim ws ON ws.status_code = rn.status_code
-            WHERE rn.region_code = :region_code
-              AND rn.date_id BETWEEN :from_date AND :to_date
-            GROUP BY $weekStartExpr, rn.date_id
-            WITH ROLLUP
-            HAVING 
-                -- 전체 평균 레벨 제외
-                NOT (GROUPING($weekStartExpr) = 1 AND GROUPING(rn.date_id) = 1)
-            ORDER BY 
-                GROUPING($weekStartExpr) ASC, 
-                GROUPING(rn.date_id) ASC, 
-                MAX(rn.date_id) ASC
+
+            GROUP BY week_start, rn.date_id WITH ROLLUP
+
+            HAVING NOT (
+                    week_start IS NULL 
+                AND rn.date_id IS NULL
+            )
+
+            
+
         ";
 
         try {
@@ -106,7 +105,22 @@ class WeatherRainRollupModel
             $stmt->execute();
 
             $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+            // 정렬: DAY 먼저, WEEK_AVG 나중 / 날짜 순서
+            usort($rows, function($a, $b) {
 
+                // 1) DAY를 먼저
+                if ($a['level'] !== $b['level']) {
+                    return $a['level'] === 'DAY' ? -1 : 1;
+                }
+
+                // 2) DAY 간 비교 → date_id
+                if ($a['level'] === 'DAY') {
+                    return strcmp($a['date_id'], $b['date_id']);
+                }
+
+                // 3) WEEK_AVG 간 비교 → week_start
+                return strcmp($a['week_start'], $b['week_start']);
+            });
             // 타입/키 정리 (rainfall_mm은 float로 캐스팅)
             foreach ($rows as &$r) {
                 // DB 드라이버에 따라 문자열로 올 수 있으니 안전하게 변환
