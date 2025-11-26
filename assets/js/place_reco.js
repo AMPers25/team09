@@ -160,7 +160,9 @@ async function onClickList(e){
       const q = new URLSearchParams();
       if (has(regionCode)) q.set('region_code', regionCode);
       q.set('year', y); q.set('month', m);
+
       location.href = `temp-calendar.html?${q.toString()}`;
+
       return;
     }
 

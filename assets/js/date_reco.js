@@ -107,7 +107,7 @@
     if($empty) $empty.hidden = true;
 
     $list.innerHTML = rows.map((r, idx)=>`
-      <li class="li-row" data-start="${r.start_date}" data-end="${r.end_date}">
+      <li class="li-row" data-region="${r.region_code}" data-start="${r.start_date}" data-end="${r.end_date}">
         <button class="icon-btn star" title="즐겨찾기 추가" aria-label="즐겨찾기 추가">
           <i class="fa-regular fa-star"></i>
         </button>
@@ -137,10 +137,20 @@
       const start = li.dataset.start;
       const dt = new Date(start);
       const m = String(dt.getMonth()+1).padStart(2,'0');
+
+      let regionParam = null;
+
+      if ($region && has($region.value)) {
+        regionParam = $region.value;
+      } else if (li.dataset.region) {
+        regionParam = li.dataset.region;
+      }
       const q = new URLSearchParams();
+
       if (has($region.value)) q.set('region_code', $region.value);
       q.set('month', m);
       location.href = `temp-calendar.html?${q.toString()}`;
+
       return;
     }
 
