@@ -21,8 +21,8 @@ class WeatherAlertCalendarController
     }
 
     /**
-     * GET /api/calendar/alert/{region_code}/{month}
-     *  - path params로 월 지정
+     * GET /api/calendar/alert/{region_code}/{year}/{month}
+     *  - path params로 연도, 월 지정
      *  - 컨트롤러에서 월 시작/끝을 계산해 모델에 넘김
      */
     public function getMonthlyAlertsAction(array $params = []): void
@@ -33,7 +33,7 @@ class WeatherAlertCalendarController
 
         // 1) 필수값
         if (!$regionCode || !$monthParam) {
-            $this->sendErrorResponse(400, "필수 데이터(region_code, month)가 누락되었습니다.");
+            $this->sendErrorResponse(400, "필수 데이터(region_code, year, month)가 누락되었습니다.");
             return;
         }
 

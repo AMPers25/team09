@@ -40,18 +40,18 @@ return function (\App\Core\Router $router) {
         DailyController::class, 'getDailyWeatherAction');
 
     // 2-2) 기온 캘린더 조회 (월/지역별 일일 평균 기온)
-    // URL: /api/calendar/temperature/{region_code}/{month}
-    $router->get('/api/calendar/temperature/{region_code}/{month}',
+    // URL: /api/calendar/temperature/{region_code}/{year}/{month}
+    $router->get('/api/calendar/temperature/{region_code}/{year}/{month}',
         TemperatureCalendarController::class, 'getDailyCalendar');
 
     // 2-3) 강수량 캘린더 조회
-    // URL: /api/calendar/rain/{region_code}/{month}
-    $router->get('/api/calendar/rain/{region_code}/{month}',
+    // URL: /api/calendar/rain/{region_code}/{year}/{month}
+    $router->get('/api/calendar/rain/{region_code}/{year}/{month}',
         WeatherRainRollupController::class, 'getRainRollupAction');
 
     // 2-4) 경보 캘린더 조회
-    // URL: /api/calendar/alert/{region_code}/{month}
-    $router->get('/api/calendar/alert/{region_code}/{month}',
+    // URL: /api/calendar/alert/{region_code}/{year}/{month}
+    $router->get('/api/calendar/alert/{region_code}/{year}/{month}',
         WeatherAlertCalendarController::class, 'getMonthlyAlertsAction');
 
 

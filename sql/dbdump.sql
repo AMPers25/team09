@@ -33,7 +33,7 @@ CREATE TABLE `AirQuality` (
   KEY `date_id` (`date_id`),
   CONSTRAINT `airquality_ibfk_1` FOREIGN KEY (`region_code`) REFERENCES `Region` (`region_code`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `airquality_ibfk_2` FOREIGN KEY (`date_id`) REFERENCES `DateDim` (`date_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -66,7 +66,7 @@ CREATE TABLE `Bookmark` (
   CONSTRAINT `bookmark_ibfk_1` FOREIGN KEY (`region_code`) REFERENCES `Region` (`region_code`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `bookmark_ibfk_2` FOREIGN KEY (`start_date`) REFERENCES `DateDim` (`date_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `bookmark_ibfk_3` FOREIGN KEY (`end_date`) REFERENCES `DateDim` (`date_id`) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='여행지 즐겨찾기 목록';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='여행지 즐겨찾기 목록';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -91,7 +91,7 @@ CREATE TABLE `DateDim` (
   `day` tinyint NOT NULL,
   `is_holiday` tinyint(1) NOT NULL DEFAULT '0' COMMENT '공휴일 여부',
   PRIMARY KEY (`date_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -125,7 +125,7 @@ CREATE TABLE `Rain` (
   CONSTRAINT `rain_ibfk_1` FOREIGN KEY (`region_code`) REFERENCES `Region` (`region_code`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `rain_ibfk_2` FOREIGN KEY (`date_id`) REFERENCES `DateDim` (`date_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `rain_ibfk_3` FOREIGN KEY (`status_code`) REFERENCES `WeatherStatusDim` (`status_code`) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -152,7 +152,7 @@ CREATE TABLE `Region` (
   `popular_count` int DEFAULT '0' COMMENT '지역별 검색 횟수 (랭킹 분석용)',
   PRIMARY KEY (`region_code`),
   UNIQUE KEY `idx_region_name` (`region_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -183,7 +183,7 @@ CREATE TABLE `Temperature` (
   KEY `date_id` (`date_id`),
   CONSTRAINT `temperature_ibfk_1` FOREIGN KEY (`region_code`) REFERENCES `Region` (`region_code`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `temperature_ibfk_2` FOREIGN KEY (`date_id`) REFERENCES `DateDim` (`date_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -214,7 +214,7 @@ CREATE TABLE `TravelIndex` (
   KEY `date_id` (`date_id`),
   CONSTRAINT `travelindex_ibfk_1` FOREIGN KEY (`region_code`) REFERENCES `Region` (`region_code`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `travelindex_ibfk_2` FOREIGN KEY (`date_id`) REFERENCES `DateDim` (`date_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -245,7 +245,7 @@ CREATE TABLE `WeatherAlert` (
   KEY `idx_alert_search` (`region_code`,`date_id`),
   CONSTRAINT `weatheralert_ibfk_1` FOREIGN KEY (`region_code`) REFERENCES `Region` (`region_code`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `weatheralert_ibfk_2` FOREIGN KEY (`date_id`) REFERENCES `DateDim` (`date_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2338 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2338 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -269,7 +269,7 @@ CREATE TABLE `WeatherStatusDim` (
   `status_code` char(2) NOT NULL COMMENT '기상 현상 코드 (PK, 예: 91, 84)',
   `status_name` varchar(50) NOT NULL COMMENT '기상 현상 (예: 맑음, 비, 흐림)',
   PRIMARY KEY (`status_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

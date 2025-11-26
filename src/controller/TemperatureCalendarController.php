@@ -27,10 +27,11 @@ class TemperatureCalendarController {
         $regionCode = $params['region_code'] ?? null;
         // int로 형변환하고 유효성 검증을 위해 filter_var 사용
         $month = filter_var($params['month'] ?? null, FILTER_VALIDATE_INT);
+        $year = 2024; // 고정된 연도
 
         // 필수 파라미터 누락 검사
         if (!$regionCode || $month === false) {
-            $this->sendErrorResponse(400, "잘못된 요청입니다. regionCode, month 파라미터를 확인해주세요.");
+            $this->sendErrorResponse(400, "잘못된 요청입니다. region_code, month 파라미터를 확인해주세요.");
             return;
         }
 

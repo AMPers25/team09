@@ -21,13 +21,14 @@ class WeatherRainRollupController
     }
 
     /**
-     * GET /api/calendar/rain/{region_code}/{month}
+     * GET /api/calendar/rain/{region_code}/{year}/{month}
      *  - path params 로 받은 월을 이용해 [2024-MM-01 ~ 2024-MM(마지막날)] 범위를 계산
      *  - Model::getRainRollup(region, from, to) 재사용
      */
     public function getRainRollupAction(array $params = []): void
     {
         $regionCode = $params['region_code'] ?? null;
+        $yearParam = $params['year']       ?? null;
         $monthParam = $params['month']       ?? null;
         $year = 2024; // 고정된 연도
 
