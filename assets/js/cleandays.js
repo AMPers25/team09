@@ -1,3 +1,4 @@
+/* Author: Rihyun Kang */
 /* 3-1 연속 클린데이 페이지 */
 (function(){
   const $  = (s, el=document)=>el.querySelector(s);

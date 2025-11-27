@@ -1,3 +1,4 @@
+/* Author: Rihyun Kang */
 /* 3-2 여행 적합 날짜 추천 페이지 */
 (function(){
   const $  = (s, el=document)=>el.querySelector(s);

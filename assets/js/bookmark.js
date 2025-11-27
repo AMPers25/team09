@@ -1,3 +1,4 @@
+// Author: Rihyun Kang
 (function(){
     // --- 공통 유틸 폴백 (app.js가 있으면 그걸 사용) ---
     const qs  = window.qs  || ((s, el=document)=>el.querySelector(s));

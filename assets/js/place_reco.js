@@ -1,3 +1,4 @@
+/* Author: Rihyun Kang */
 /* 3-3 여행 적합 장소 추천 페이지 */
 (function(){
   const $  = (s, el=document)=>el.querySelector(s);

@@ -1,3 +1,4 @@
+// Author: Rihyun Kang
 // 홈 전용 스크립트
 
 (async function initHome(){
